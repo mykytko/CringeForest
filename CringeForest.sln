@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CringeForestLibrary", "CringeForestLibrary\CringeForestLibrary.csproj", "{781084F2-FAC4-44FA-8B46-0FE16E7599AD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CringeForest", "CringeForest\CringeForest.csproj", "{781084F2-FAC4-44FA-8B46-0FE16E7599AD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleInterface", "ConsoleInterface\ConsoleInterface.csproj", "{3F99AEF9-0447-4EBF-A677-BCD517605AAF}"
 EndProject
