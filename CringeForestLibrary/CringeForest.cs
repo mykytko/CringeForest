@@ -56,7 +56,7 @@ namespace CringeForestLibrary
             }
 
             FileStream mapFileStream = new FileStream(mapName, FileMode.CreateNew);
-            // write the map from memory to mapFileStream
+            // TODO: write the map from memory to mapFileStream
             return mapName;
         }
         public bool LoadMap(string path)
@@ -67,7 +67,7 @@ namespace CringeForestLibrary
                 return false;
             }
             var mapFileStream = new FileStream(path, FileMode.Open);
-            // read the map and load into memory
+            // TODO: read the map and load into memory
             // you should check for a loaded map in InitializeSimulation()
             // if there is no map loaded, generate a new one
             return true;
@@ -81,7 +81,7 @@ namespace CringeForestLibrary
                 return false;
             }
             var parametersFileStream = new FileStream(path, FileMode.Open);
-            // load parameters into memory
+            // TODO: load parameters into memory
             // you should check for loaded parameters in InitializeSimulation()
             // if there are no parameters loaded, use default
             return true;
@@ -89,8 +89,7 @@ namespace CringeForestLibrary
 
         public void InitializeSimulation()
         {
-            // check for a loaded map or parameters, if none are found - use default params and/or generate a new map
-
+            // TODO: check for a loaded map or parameters, if none are found - use default params and/or generate a new map
             // after everything is loaded, we can start the simulation
             MainLoopAsync();
         }
@@ -110,7 +109,7 @@ namespace CringeForestLibrary
             _simulationSpeed = newSpeed;
         }
 
-        private async Task MainLoopAsync()
+        private async Task MainLoopAsync() // TODO: fix async
         {
             while (true)
             {

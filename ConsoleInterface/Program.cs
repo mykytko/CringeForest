@@ -126,7 +126,7 @@ namespace ConsoleInterface
                                 cringeForest.ResumeSimulation();
                                 break;
                             case 1:
-                                // get statistics from cringeForest, which gets it from animalSimulation,
+                                // TODO: get statistics from cringeForest, which gets it from animalSimulation,
                                 // and handle it here
                                 break;
                             case 2:
