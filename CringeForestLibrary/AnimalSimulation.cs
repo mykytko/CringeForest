@@ -1,4 +1,4 @@
-namespace CringeForest
+namespace CringeForestLibrary
 {
     public class AnimalSimulation
     {

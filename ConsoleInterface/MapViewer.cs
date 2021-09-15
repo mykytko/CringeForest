@@ -1,7 +1,9 @@
-﻿namespace ConsoleInterface
+﻿using CringeForestLibrary;
+
+namespace ConsoleInterface
 {
-    public class MapViewer
+    public class MapViewer : MapViewerInterface
     {
-        
+
     }
 }
