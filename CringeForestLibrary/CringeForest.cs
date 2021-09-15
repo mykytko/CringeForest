@@ -1,6 +1,7 @@
 // Facade class
 
-using System.ComponentModel;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace CringeForestLibrary
 {
@@ -19,24 +20,121 @@ namespace CringeForestLibrary
     
     public class CringeForest
     {
-        private MapHandler mapHandler;
-        private AnimalSimulation animalSimulation;
-        private int age = 0;
+        private MapHandler _mapHandler;
+        private AnimalSimulation _animalSimulation;
+        private int _age;
+        private bool _isStopped;
+        private bool _isResumed;
+        private bool exitProgram;
+        private Task mainLoop;
+        private float _simulationSpeed = 1.0f;
+        private const string DefaultSavedMapName = "savedMap";
+        private const string MapExtension = ".cfm";
         public CringeForest(IMapViewerInterface mapViewer)
         {
-            Initialize();
-            while (true)
+            _mapHandler = new MapHandler();
+            _animalSimulation = new AnimalSimulation();
+        }
+        public string SaveMap()
+        {
+            string mapName = DefaultSavedMapName + MapExtension;
+            if (File.Exists(mapName))
             {
-                // mapHandler.GrowFood();
-                // animalSimulation.moveAnimals();
-                age++;
+                mapName = DefaultSavedMapName + "1" + MapExtension;
             }
+
+            for (int i = 1;; i++)
+            {
+                if (File.Exists(mapName))
+                {
+                    mapName = DefaultSavedMapName + i + MapExtension;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            FileStream mapFileStream = new FileStream(mapName, FileMode.CreateNew);
+            // write the map from memory to mapFileStream
+            return mapName;
+        }
+        public bool LoadMap(string path)
+        {
+            // should return false if map is not found
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+            var mapFileStream = new FileStream(path, FileMode.Open);
+            // read the map and load into memory
+            // you should check for a loaded map in InitializeSimulation()
+            // if there is no map loaded, generate a new one
+            return true;
         }
 
-        private void Initialize()
+        public bool LoadParameters(string path)
         {
-            mapHandler = new MapHandler();
-            animalSimulation = new AnimalSimulation();
+            // should return false if file is not found or the configuration is invalid
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+            var parametersFileStream = new FileStream(path, FileMode.Open);
+            // load parameters into memory
+            // you should check for loaded parameters in InitializeSimulation()
+            // if there are no parameters loaded, use default
+            return true;
+        }
+
+        public void InitializeSimulation()
+        {
+            // check for a loaded map or parameters, if none are found - use default params and/or generate a new map
+
+            // after everything is loaded, we can start the simulation
+            MainLoopAsync();
+        }
+
+        public void StopSimulation()
+        {
+            _isStopped = true;
+        }
+
+        public void ResumeSimulation()
+        {
+            _isResumed = true;
+        }
+
+        public void SetSimulationSpeed(float newSpeed)
+        {
+            _simulationSpeed = newSpeed;
+        }
+
+        private async Task MainLoopAsync()
+        {
+            while (true)
+            {
+                if (_isStopped)
+                {
+                    while (!_isResumed && !exitProgram)
+                    {
+                    }
+
+                    if (_isResumed)
+                    {
+                        _isResumed = false;
+                        _isStopped = false;
+                    }
+
+                    if (exitProgram)
+                    {
+                        break;
+                    }
+                }
+                // mapHandler.GrowFood();
+                // animalSimulation.moveAnimals();
+                _age++;
+            }
         }
     }
 }
