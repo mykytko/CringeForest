@@ -4,6 +4,9 @@ namespace ConsoleInterface
 {
     public class MapViewer : IMapViewerInterface
     {
-
+        public void UpdateAnimalPosition()
+        {
+            
+        }
     }
 }

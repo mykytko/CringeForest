@@ -8,6 +8,8 @@ namespace ConsoleInterface
         {
             MapViewer mapViewer = new MapViewer();
             CringeForest cringeForest = new CringeForest(mapViewer);
+            
+            
         }
     }
 }
