@@ -2,7 +2,7 @@
 
 namespace ConsoleInterface
 {
-    public class MapViewer : MapViewerInterface
+    public class MapViewer : IMapViewerInterface
     {
 
     }

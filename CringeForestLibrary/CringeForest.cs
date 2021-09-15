@@ -1,14 +1,14 @@
 // Facade class
 namespace CringeForestLibrary
 {
-    public interface MapViewerInterface
+    public interface IMapViewerInterface
     {
         
     }
     
     public class CringeForest
     {
-        public CringeForest(MapViewerInterface mapViewer)
+        public CringeForest(IMapViewerInterface mapViewer)
         {
             
         }
