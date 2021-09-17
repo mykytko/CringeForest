@@ -5,17 +5,10 @@ using System.Threading.Tasks;
 
 namespace CringeForestLibrary
 {
-    public interface IMapViewerInterface
+    public interface IMapViewer
     {
-        public void UpdateAnimalPosition()
-        {
-            
-        }
-
-        public void UpdateFoodQuantity()
-        {
-            
-        }
+        public void UpdateAnimalPosition();
+        public void UpdateFoodQuantity();
     }
     
     public class CringeForest
@@ -25,12 +18,11 @@ namespace CringeForestLibrary
         private int _age;
         private bool _isStopped;
         private bool _isResumed;
-        private bool exitProgram;
-        private Task mainLoop;
+        private bool _exitProgram;
         private float _simulationSpeed = 1.0f;
         private const string DefaultSavedMapName = "savedMap";
         private const string MapExtension = ".cfm";
-        public CringeForest(IMapViewerInterface mapViewer)
+        public CringeForest(IMapViewer mapViewer)
         {
             _mapHandler = new MapHandler();
             _animalSimulation = new AnimalSimulation();
@@ -91,12 +83,17 @@ namespace CringeForestLibrary
         {
             // TODO: check for a loaded map or parameters, if none are found - use default params and/or generate a new map
             // after everything is loaded, we can start the simulation
-            MainLoopAsync();
+            MainLoop();
         }
 
         public void StopSimulation()
         {
             _isStopped = true;
+        }
+
+        public void ExitSimulation()
+        {
+            _exitProgram = true;
         }
 
         public void ResumeSimulation()
@@ -109,13 +106,13 @@ namespace CringeForestLibrary
             _simulationSpeed = newSpeed;
         }
 
-        private async Task MainLoopAsync() // TODO: fix async
+        private void MainLoop() // TODO: fix async
         {
             while (true)
             {
                 if (_isStopped)
                 {
-                    while (!_isResumed && !exitProgram)
+                    while (!_isResumed && !_exitProgram)
                     {
                     }
 
@@ -125,13 +122,13 @@ namespace CringeForestLibrary
                         _isStopped = false;
                     }
 
-                    if (exitProgram)
+                    if (_exitProgram)
                     {
                         break;
                     }
                 }
-                // mapHandler.GrowFood();
-                // animalSimulation.moveAnimals();
+                // mapHandler.RegrowFood();
+                // animalSimulation.UpdateAnimals();
                 _age++;
             }
         }

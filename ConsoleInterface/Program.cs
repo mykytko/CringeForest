@@ -1,5 +1,5 @@
 using System;
-// using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 using CringeForestLibrary;
 
@@ -7,7 +7,6 @@ namespace ConsoleInterface
 {
     public class Program
     {
-        // static async Task Main()
         static void Main()
         {
             MapViewer mapViewer = new MapViewer();
@@ -22,9 +21,8 @@ namespace ConsoleInterface
                               "1. Load map;\n" +
                               "2. Change initial parameters;\n" +
                               "3. Start new simulation.\n"); 
-                string input = Console.ReadLine();
-                int choice;
-                bool parsed = Int32.TryParse(input, out choice);
+                var input = Console.ReadLine();
+                bool parsed = Int32.TryParse(input, out int choice);
                 if (!parsed)
                 {
                     Console.WriteLine("Invalid choice!");
@@ -85,7 +83,7 @@ namespace ConsoleInterface
                     case 3:
                         // var forestTask = cringeForest.InitializeSimulation();
                         // await later
-                        cringeForest.InitializeSimulation();
+                        Task.Run(cringeForest.InitializeSimulation);
                         exitInitialMenu = true;
                         break;
                 }
@@ -100,7 +98,7 @@ namespace ConsoleInterface
             while (true)
             {
                 // enter the main menu
-                if (Console.ReadKey().Key == ConsoleKey.M)
+                if (Console.ReadLine() == "menu")
                 {
                     cringeForest.StopSimulation();
                     while (true)
@@ -110,8 +108,8 @@ namespace ConsoleInterface
                                       "1. Show statistics;\n" +
                                       "2. Change simulation parameters;\n" +
                                       "3. Change simulation speed;\n" +
-                                      "4. Save map;" +
-                                      "5. Exit the simulation.");
+                                      "4. Save map;\n" +
+                                      "5. Exit the simulation.\n");
                         string input = Console.ReadLine();
                         int choice;
                         if (!Int32.TryParse(input, out choice))
@@ -176,6 +174,7 @@ namespace ConsoleInterface
                                 Console.WriteLine("The map is successfully saved to " + cringeForest.SaveMap() + "!");
                                 break;
                             case 5:
+                                cringeForest.ExitSimulation();
                                 return;
                         }
                     }
