@@ -1,15 +1,17 @@
-﻿namespace CringeForestLibrary
+﻿using System.Diagnostics;
+
+namespace CringeForestLibrary
 {
     class PerlinNoise2D
     {
-        private int repeat;
+        private int _repeat;
 
         public PerlinNoise2D(int repeat = -1)
         {
-            this.repeat = repeat;
+            _repeat = repeat;
         }
 
-        private static readonly int[] permutation = { 151,160,137,91,90,15,                 // Hash lookup table as defined by Ken Perlin.  This is a randomly
+        private static readonly int[] Permutation = { 151,160,137,91,90,15,                 // Hash lookup table as defined by Ken Perlin.  This is a randomly
             131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,    // arranged array of all numbers from 0-255 inclusive.
             190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
             88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -24,23 +26,23 @@
             138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
         };
 
-        private static readonly int[] p;                                                    // Doubled permutation to avoid overflow
+        private static readonly int[] P;                                                    // Doubled permutation to avoid overflow
 
         static PerlinNoise2D()
         {
-            p = new int[512];
+            P = new int[512];
             for (int x = 0; x < 512; x++)
             {
-                p[x] = permutation[x % 256];
+                P[x] = Permutation[x % 256];
             }
         }
 
         public double Noise(double x, double y)
         {
-            if (repeat > 0)
+            if (_repeat > 0)
             {                                    // If we have any repeat on, change the coordinates to their "local" repetitions
-                x = x % repeat;
-                y = y % repeat;
+                x = x % _repeat;
+                y = y % _repeat;
             }
 
             int xi = (int)x & 255;                              // Calculate the "unit square" that the point asked will be located in
@@ -52,10 +54,10 @@
             double v = Fade(yf);
 
             int g1, g2, g3, g4;
-            g1 = p[p[xi] + yi];
-            g2 = p[p[Inc(xi)] + yi];
-            g3 = p[p[xi] + Inc(yi)];
-            g4 = p[p[Inc(xi)] + Inc(yi)];
+            g1 = P[P[xi] + yi];
+            g2 = P[P[Inc(xi)] + yi];
+            g3 = P[P[xi] + Inc(yi)];
+            g4 = P[P[Inc(xi)] + Inc(yi)];
 
             double d1 = Grad(g1, xf, yf);
             double d2 = Grad(g2, xf - 1, yf);
@@ -72,7 +74,7 @@
         private int Inc(int num)
         {
             num++;
-            if (repeat > 0) num %= repeat;
+            if (_repeat > 0) num %= _repeat;
 
             return num;
         }
@@ -101,28 +103,29 @@
     }
     public class MapGenerator
     {
-        private double[,] terrain; //height map, 0.3 - sea ​​level
-        private int width;
-        private int height;
-        private const double SCALE = 0.08; //the higher is scale, the rougher is the gradient
+        private double[,] _terrain; //height map, 0.3 - sea ​​level
+        private int _width;
+        private int _height;
+        private const double Scale = 0.08; //the higher is scale, the rougher is the gradient
 
         public MapGenerator(int width = 100, int height = 100)
         {
-            this.width = width;
-            this.height = height;
-            terrain = new double[width, height];
+            Trace.WriteLine("Generating the map...");
+            _width = width;
+            _height = height;
+            _terrain = new double[width, height];
         }
         public double[,] GenerateTerrain()
         {
             PerlinNoise2D pn = new PerlinNoise2D();
-            for (int i = 0; i < width; i++)
+            for (int i = 0; i < _width; i++)
             {
-                for (int j = 0; j < height; j++)
+                for (int j = 0; j < _height; j++)
                 {
-                    terrain[i, j] = pn.Noise(i * SCALE, j * SCALE);
+                    _terrain[i, j] = pn.Noise(i * Scale, j * Scale);
                 }
             }
-            return terrain;
+            return _terrain;
         }
     }
 }

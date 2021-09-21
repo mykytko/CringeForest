@@ -1,19 +1,22 @@
 // Facade class
 
+using System;
 using System.IO;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace CringeForestLibrary
 {
     public interface IMapViewer
     {
-        public void UpdateAnimalPosition();
-        public void UpdateFoodQuantity();
+        public void AddAnimal((int, int) coords, Animal animal);
+        public void DeleteAnimal((int, int) coords);
+        public void MoveAnimal((int, int) coords1, (int, int) coords2);
+        public void AddFood((int, int) coords, Food food);
+        public void SetFood((int, int) coords, int saturation);
     }
     
     public class CringeForest
     {
-        private MapHandler _mapHandler;
         private AnimalSimulation _animalSimulation;
         private int _age;
         private bool _isStopped;
@@ -22,11 +25,21 @@ namespace CringeForestLibrary
         private float _simulationSpeed = 1.0f;
         private const string DefaultSavedMapName = "savedMap";
         private const string MapExtension = ".cfm";
+        private const string DefaultJsonFileName = "ObjectTypesSpecification.json";
+
         public CringeForest(IMapViewer mapViewer)
         {
-            _mapHandler = new MapHandler();
-            _animalSimulation = new AnimalSimulation();
+            Trace.Listeners.Add(new TextWriterTraceListener(File.CreateText("CringeForest.log")));
+            Trace.AutoFlush = true;
+            if (!Metadata.InitializeMetadata(DefaultJsonFileName))
+            {
+                Trace.WriteLine("Critical Error! Couldn't load metadata. Terminating...");
+                Environment.Exit(1);
+            }
+            var map = new Map(mapViewer);
+            _animalSimulation = new AnimalSimulation(map);
         }
+        
         public string SaveMap()
         {
             string mapName = DefaultSavedMapName + MapExtension;
@@ -83,6 +96,7 @@ namespace CringeForestLibrary
         {
             // TODO: check for a loaded map or parameters, if none are found - use default params and/or generate a new map
             // after everything is loaded, we can start the simulation
+
             MainLoop();
         }
 
@@ -106,8 +120,9 @@ namespace CringeForestLibrary
             _simulationSpeed = newSpeed;
         }
 
-        private void MainLoop() // TODO: fix async
+        private void MainLoop()
         {
+            Trace.WriteLine("Simulation started.");
             while (true)
             {
                 if (_isStopped)
