@@ -62,6 +62,9 @@ namespace CringeForestLibrary
 
             FileStream mapFileStream = new FileStream(mapName, FileMode.CreateNew);
             // TODO: write the map from memory to mapFileStream
+            // terrain is setted by size and seed
+            // food-array contains foodID+coordinates+amount of food
+            // animal-array contains animalID+coordinates
             return mapName;
         }
         public bool LoadMap(string path)

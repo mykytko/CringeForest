@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace CringeForestLibrary
 {
@@ -103,26 +104,40 @@ namespace CringeForestLibrary
     }
     public class MapGenerator
     {
+        //TODO 1: match the specified size of the map (taking into account possibly different width and height of the map),
+        //the maximum size of the map in 256x256, a randomly generated displacemant
+        //and the repeat parameter in lines (1), (2), (3), (4)
+        //TODO 2: make it possible to give seed into constructor
+        private const double Scale = 0.08; //base value. the higher is scale, the rougher is the gradient
         private double[,] _terrain; //height map, 0.3 - sea ​​level
         private int _width;
         private int _height;
-        private const double Scale = 0.08; //the higher is scale, the rougher is the gradient
-
-        public MapGenerator(int width = 100, int height = 100)
+        private int _seed;
+        private double _displacemant;
+        private double _scale;
+        public MapGenerator(int width = 100, int height = 100) //(1)
         {
             Trace.WriteLine("Generating the map...");
             _width = width;
             _height = height;
             _terrain = new double[width, height];
+
+            Random rnd = new Random();
+            _seed = rnd.Next(0, 100000000);
+            _scale = Scale + (_seed / 10000) / 1000000.0;
+            int firstDisplacemant = (_seed % 10000) / 100;
+            int secondDisplacemant = (_seed % 10000) % 100;
+            double k = (firstDisplacemant + secondDisplacemant) / 256.0; //(2)
+            _displacemant = firstDisplacemant / k;
         }
         public double[,] GenerateTerrain()
         {
-            PerlinNoise2D pn = new PerlinNoise2D();
+            PerlinNoise2D pn = new PerlinNoise2D(); //(3) P.S. it could have paremetrs
             for (int i = 0; i < _width; i++)
             {
                 for (int j = 0; j < _height; j++)
                 {
-                    _terrain[i, j] = pn.Noise(i * Scale, j * Scale);
+                    _terrain[i, j] = pn.Noise((i + _displacemant) * _scale, (j + (256 - _displacemant)) * _scale); //(4)
                 }
             }
             return _terrain;
