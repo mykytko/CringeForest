@@ -8,6 +8,7 @@ namespace CringeForestLibrary
 {
     public class BiomeType
     {
+        public string Name { get; }
     }
     
     public class FoodType
@@ -19,14 +20,14 @@ namespace CringeForestLibrary
 
     public class Food
     {
-        private int _type;
+        public int Type { get; }
 
         public int Saturation
         {
             get => Saturation;
             set
             {
-                if (value < 0 || value > Metadata.FoodTypes[_type].Saturation)
+                if (value < 0 || value > Metadata.FoodTypes[Type].Saturation)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -35,8 +36,8 @@ namespace CringeForestLibrary
 
         public Food(int type)
         {
-            _type = type;
-            Saturation = Metadata.FoodTypes[_type].Saturation;
+            Type = type;
+            Saturation = Metadata.FoodTypes[Type].Saturation;
         }
     }
 
@@ -127,9 +128,9 @@ namespace CringeForestLibrary
             
             BiomeTypes = new Dictionary<int, BiomeType>();
             int i = 1;
-            foreach (var element in biomeTypes.Value.EnumerateObject())
+            foreach (var element in biomeTypes.Value.EnumerateArray())
             {
-                BiomeTypes.Add(i, JsonSerializer.Deserialize<BiomeType>(element.Value.GetRawText()));
+                BiomeTypes.Add(i, JsonSerializer.Deserialize<BiomeType>(element.GetRawText()));
                 i++;
             }
 
