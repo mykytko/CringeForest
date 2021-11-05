@@ -19,7 +19,7 @@ namespace WebInterface
             
         }
 
-        public void AddFood((int, int) coords, Food food)
+        public void AddFood((int, int) coords, FoodSupplier food)
         {
             
         }

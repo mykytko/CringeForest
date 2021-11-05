@@ -1,69 +1,72 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Primitives;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace CringeForestLibrary
 {
-    public class BiomeType
+    public class BiomeSpecification
     {
-        public string Name { get; }
+        public string Name { get; set; }
+        public Dictionary<int, int> AnimalShares { get; set; }
+        public Dictionary<int, int> FoodShares { get; set; }
     }
     
-    public class FoodType
+    public class FoodSpecification
     {
-        public Dictionary<int, float> Frequency { get; }
-        public int Saturation { get; }
-        public int GrowthRate { get; }
+        public string Name { get; set; }
+        public int Saturation { get; set; }
+        public double GrowthRate { get; set; }
+    }
+    
+    public class AnimalSpecification
+    {
+        public string Name { get; set; }
+        public HashSet<int> FoodTypes { get; set; }
+        public bool IsPredatory { get; set; }
+        public int FoodIntake { get; set; }
+        public int Speed { get; set; }
+        public int MaxAge { get; set; }
     }
 
-    public class Food
+    public class FoodSupplier
     {
-        public int Type { get; }
+        private int _saturation;
+        private int Type { get; }
 
         public int Saturation
         {
-            get => Saturation;
+            get => _saturation;
             set
             {
-                if (value < 0 || value > Metadata.FoodTypes[Type].Saturation)
+                if (value < 0 || value > Metadata.FoodSpecifications[Type].Saturation)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
+
+                _saturation = value;
             }
         }
 
-        public Food(int type)
+        public FoodSupplier(int type)
         {
             Type = type;
-            Saturation = Metadata.FoodTypes[Type].Saturation;
+            Saturation = Metadata.FoodSpecifications[Type].Saturation;
         }
-    }
-
-    public class AnimalType
-    {
-        public Dictionary<int, float> Frequency { get; }
-        public Dictionary<int, FoodType> FoodTypes { get; }
-        public bool IsPredatory { get; }
-        private int _foodIntake;
-        private int _speed;
-        private int _maxAge;
     }
 
     public static class Metadata
     {
-        public static Dictionary<int, BiomeType> BiomeTypes;
-        public static Dictionary<int, FoodType> FoodTypes;
-        public static Dictionary<int, AnimalType> AnimalTypes;
-
-        static Metadata()
-        {
-            Trace.WriteLine("Constructing Metadata...");
-            FoodTypes = new Dictionary<int, FoodType>();
-            AnimalTypes = new Dictionary<int, AnimalType>();
-        }
-
+        public static List<BiomeSpecification> BiomeSpecifications { get; set; }
+        public static List<FoodSpecification> FoodSpecifications { get; set; }
+        public static List<AnimalSpecification> AnimalSpecifications { get; set; }
+        
         public static bool InitializeMetadata(string fileName)
         {
             if (!File.Exists(fileName))
@@ -73,85 +76,132 @@ namespace CringeForestLibrary
             }
 
             Trace.WriteLine("Reading the configuration...");
-            string jsonMetadata = File.ReadAllText(fileName); 
+            var jsonMetadata = File.ReadAllText(fileName); 
             var jsonDocument = JsonDocument.Parse(jsonMetadata);
-            JsonProperty biomeTypes = default;
-            JsonProperty foodTypes = default;
-            JsonProperty animalTypes = default;
-            bool biomeTypesInit = false;
-            bool foodTypesInit = false;
-            bool animalTypesInit = false;
+
+            string foodSpecsJson = null;
+            string animalSpecsJson = null;
+            string biomeSpecsJson = null;
+
             Trace.WriteLine("Parsing the configuration...");
             foreach (var element in jsonDocument.RootElement.EnumerateObject())
             {
-                if (element.NameEquals("Biomes"))
+                switch (element.Name)
                 {
-                    if (biomeTypesInit)
-                    {
-                        Trace.WriteLine("Two conflicting Biomes entries in " + fileName);
+                    case "FoodSpecifications":
+                        if (foodSpecsJson != null)
+                        {
+                            Trace.WriteLine("Two conflicting FoodTypes entries in " + fileName);
+                            return false;
+                        }
+                        
+                        foodSpecsJson = element.Value.GetRawText();
+                        break;
+                    
+                    case "AnimalSpecifications":
+                        if (animalSpecsJson != null)
+                        {
+                            Trace.WriteLine("Two conflicting FoodTypes entries in " + fileName);
+                            return false;
+                        }
+
+                        animalSpecsJson = element.Value.GetRawText();
+                        break;
+                    
+                    case "BiomeSpecifications":
+                        if (biomeSpecsJson != null)
+                        {
+                            Trace.WriteLine("Two conflicting AnimalTypes entries in " + fileName);
+                            return false;
+                        }
+
+                        biomeSpecsJson = element.Value.GetRawText();
+                        break;
+                    
+                    default:
+                        Trace.WriteLine("Invalid key in " + fileName + ": " + element.Name);
                         return false;
-                    }
-
-                    biomeTypesInit = true;
-                    biomeTypes = element;
-                    continue;
                 }
-                
-                if (element.NameEquals("FoodTypes"))
-                {
-                    if (foodTypesInit)
-                    {
-                        Trace.WriteLine("Two conflicting FoodTypes entries in " + fileName);
-                        return false;
-                    }
+            }
 
-                    foodTypesInit = true;
-                    foodTypes = element;
-                    continue;
-                }
+            Debug.Assert(foodSpecsJson != null, nameof(foodSpecsJson) + " != null");
+            Debug.Assert(animalSpecsJson != null, nameof(animalSpecsJson) + " != null");
+            Debug.Assert(biomeSpecsJson != null, nameof(biomeSpecsJson) + " != null");
+            
+            FoodSpecifications = JsonSerializer.Deserialize<List<FoodSpecification>>(foodSpecsJson);
+            Trace.WriteLine(foodSpecsJson);
 
-                if (element.NameEquals("AnimalTypes"))
-                {
-                    if (animalTypesInit)
-                    {
-                        Trace.WriteLine("Two conflicting AnimalTypes entries in " + fileName);
-                        return false;
-                    }
+            var tempFoodDictionary = new Dictionary<string, int>();
+            Debug.Assert(FoodSpecifications != null, nameof(FoodSpecifications) + " != null");
+            for (var i = 0; i < FoodSpecifications.Count; i++)
+            {
+                tempFoodDictionary.Add(FoodSpecifications[i].Name, i);
+            }
 
-                    animalTypesInit = true;
-                    animalTypes = element;
-                    continue;
-                }
+            ReplaceNamesById(ref animalSpecsJson, "FoodTypes",
+                match => tempFoodDictionary[match.Value[1..^1]].ToString());
+            AnimalSpecifications = JsonSerializer.Deserialize<List<AnimalSpecification>>(animalSpecsJson);
 
-                Trace.WriteLine("Invalid key in " + fileName + ": " + element.Name);
+            var tempAnimalDictionary = new Dictionary<string, int>();
+            Debug.Assert(AnimalSpecifications != null, nameof(AnimalSpecifications) + " != null");
+            for (var i = 0; i < AnimalSpecifications.Count; i++)
+            {
+                Debug.Assert(AnimalSpecifications != null, nameof(AnimalSpecifications) + " != null");
+                tempAnimalDictionary.Add(AnimalSpecifications[i].Name, i);
             }
             
-            BiomeTypes = new Dictionary<int, BiomeType>();
-            int i = 1;
-            foreach (var element in biomeTypes.Value.EnumerateArray())
-            {
-                BiomeTypes.Add(i, JsonSerializer.Deserialize<BiomeType>(element.GetRawText()));
-                i++;
-            }
-
-            FoodTypes = new Dictionary<int, FoodType>();
-            i = 1;
-            foreach (var element in foodTypes.Value.EnumerateObject())
-            {
-                FoodTypes.Add(i, JsonSerializer.Deserialize<FoodType>(element.Value.GetRawText()));
-                i++;
-            }
-
-            AnimalTypes = new Dictionary<int, AnimalType>();
-            i = 1;
-            foreach (var element in animalTypes.Value.EnumerateObject())
-            {
-                AnimalTypes.Add(i, JsonSerializer.Deserialize<AnimalType>(element.Value.GetRawText()));
-                i++;
-            }
+            ReplaceNamesById(ref biomeSpecsJson, "FoodShares", 
+                match => '"' + tempFoodDictionary[match.Value[1..^1]].ToString() + '"');
+            ReplaceNamesById(ref biomeSpecsJson, "AnimalShares", 
+                match => '"' + tempAnimalDictionary[match.Value[1..^1]].ToString() + '"');
+            Trace.WriteLine(biomeSpecsJson);
+            BiomeSpecifications = JsonSerializer.Deserialize<List<BiomeSpecification>>(biomeSpecsJson);
 
             Trace.WriteLine("Metadata initialized");
             return true;
+        }
+
+        private static void ReplaceNamesById(ref string specsJson, string name, MatchEvaluator evaluator)
+        {
+            var builder = new StringBuilder();
+            var index = 0;
+            while (true)
+            {
+                var begin = specsJson.IndexOf(name, index, StringComparison.Ordinal);
+                if (begin == -1)
+                {
+                    builder.Append(specsJson[index..]);
+                    break;
+                }
+                var square = specsJson.IndexOf('[', begin);
+                var curly = specsJson.IndexOf('{', begin);
+                char bracket;
+                if (square == -1)
+                {
+                    bracket = '}';
+                    begin = curly;
+                }
+                else if (curly == -1)
+                {
+                    bracket = ']';
+                    begin = square;
+                }
+                else
+                {
+                    bracket = square < curly ? ']' : '}';
+                    begin = square < curly ? square : curly;
+                }
+                builder.Append(specsJson.Substring(index, begin - index));
+                
+                var end = specsJson.IndexOf(bracket, begin);
+                const string pattern = "\"[A-Za-z]*\"";
+                builder.Append(
+                    Regex.Replace(specsJson.Substring(begin, end - begin + 1), pattern, evaluator));
+                index = end + 1;
+            }
+            
+            specsJson = builder.ToString();
+            Console.WriteLine(specsJson);
         }
     }
 }

@@ -8,13 +8,11 @@ namespace CringeForestLibrary
         Female
     }
     
-    public abstract class Animal
+    public class Animal
     {
         private static int _currentId;
         public int Id { get; }
-        public AnimalType Type { get; }
-        public List<FoodType> Foods { get; }
-        public List<AnimalType> AnimalFoods { get; }
+        public int Type { get; }
         public AnimalSex Sex { get; }
         private int _saturation;
         private int _foodIntake;
@@ -23,15 +21,21 @@ namespace CringeForestLibrary
         private int _maxAge;
         public (int, int) Position { get; set; }
 
-        protected Animal(AnimalType type, AnimalSex sex, (int, int) position)
+        public Animal(int type, AnimalSex sex, (int, int) position)
         {
             Id = _currentId;
             _currentId++;
             Type = type;
             Sex = sex;
             Position = position;
-            
+            _age = 0;
+
             // set the rest using AnimalType
+            var spec = Metadata.AnimalSpecifications[type];
+            _saturation = spec.FoodIntake;
+            _foodIntake = spec.FoodIntake;
+            _speed = spec.Speed;
+            _maxAge = spec.MaxAge;
         }
     }
 }

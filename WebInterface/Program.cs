@@ -11,19 +11,18 @@ using CringeForestLibrary;
 
 namespace WebInterface
 {
-    public class Program
+    public static class Program
     {
-        public static CringeForest cringeForest;
-        public static MapViewer mapViewer;
-        
+        public static CringeForest CringeForest { get; private set; }
+
         public static void Main(string[] args)
         {
-            mapViewer = new MapViewer();
-            cringeForest = new CringeForest(mapViewer);
+            var mapViewer = new MapViewer();
+            CringeForest = new CringeForest(mapViewer);
             CreateHostBuilder(args).Build().Run();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
     }

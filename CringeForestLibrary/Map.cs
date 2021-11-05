@@ -7,18 +7,28 @@ namespace CringeForestLibrary
 {
     public class Map
     {
-        private IMapViewer _mapViewer;
+        private readonly IMapViewer _mapViewer;
         public int Width { get; }
         public int Height { get; }
 
-        private class Pixel
+        public class Pixel
         {
-            public int BiomeId { get; set; }
+            public Pixel(int biomeId)
+            {
+                BiomeId = biomeId;
+            }
+
+            public int BiomeId { get; }
         }
         
-        private Pixel[,] _matrix;
-        private Dictionary<(int, int), Animal> _animals;
-        private Dictionary<(int, int), Food> _food;
+        private readonly Pixel[,] _matrix;
+        private readonly Dictionary<(int, int), Animal> _animals;
+        private readonly Dictionary<(int, int), FoodSupplier> _food;
+
+        public int GetPixelBiome((int, int) coords)
+        {
+            return _matrix[coords.Item1, coords.Item2].BiomeId;
+        }
 
         public Map(IMapViewer mapViewer, int width = 256, int height = 256)
         {
@@ -27,7 +37,7 @@ namespace CringeForestLibrary
             Height = height;
             _matrix = new Pixel[Width, Height];
             _animals = new Dictionary<(int, int), Animal>();
-            _food = new Dictionary<(int, int), Food>();
+            _food = new Dictionary<(int, int), FoodSupplier>();
             _mapViewer = mapViewer;
         }
 
@@ -59,7 +69,7 @@ namespace CringeForestLibrary
             _mapViewer.MoveAnimal(coords1, coords2);
         }
 
-        public void AddFood((int, int) coords, Food food)
+        public void AddFood((int, int) coords, FoodSupplier food)
         {
             _food.Add(coords, food);
             _mapViewer.AddFood(coords, food);
