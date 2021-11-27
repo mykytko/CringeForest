@@ -38,7 +38,7 @@ namespace CringeForestLibrary
     public class FoodSupplier
     {
         private int _saturation;
-        private int Type { get; }
+        public int Type { get; }
 
         public int Saturation
         {
@@ -154,7 +154,6 @@ namespace CringeForestLibrary
                 match => '"' + tempFoodDictionary[match.Value[1..^1]].ToString() + '"');
             ReplaceNamesById(ref biomeSpecsJson, "AnimalShares", 
                 match => '"' + tempAnimalDictionary[match.Value[1..^1]].ToString() + '"');
-            Trace.WriteLine(biomeSpecsJson);
             BiomeSpecifications = JsonSerializer.Deserialize<List<BiomeSpecification>>(biomeSpecsJson);
 
             Trace.WriteLine("Metadata initialized");
@@ -201,7 +200,6 @@ namespace CringeForestLibrary
             }
             
             specsJson = builder.ToString();
-            Console.WriteLine(specsJson);
         }
     }
 }

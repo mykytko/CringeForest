@@ -103,7 +103,7 @@ namespace CringeForestLibrary
             // if none are found - use default params and/or generate a new map
             // after everything is loaded, we can start the simulation
             
-            var map = new Map(_mapViewer);
+            var map = new Map(_mapViewer, _animalSimulation);
             _animalSimulation = new AnimalSimulation(map);
             
             MainLoop();
@@ -152,7 +152,10 @@ namespace CringeForestLibrary
                     }
                 }
 
+                Trace.WriteLine("Tick " + _age + " start");
+                _animalSimulation.SimulateTick();
                 _age++;
+                Trace.WriteLine("Tick " + _age + " end");
             }
         }
     }

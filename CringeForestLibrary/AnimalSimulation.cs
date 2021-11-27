@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CringeForestLibrary
@@ -6,6 +7,7 @@ namespace CringeForestLibrary
     public class AnimalSimulation
     {
         private readonly Map _map;
+        private readonly Dictionary<(int, int), Animal> _animals = new ();
 
         private static int DetermineType(Random rand, int biomeId)
         {
@@ -31,11 +33,12 @@ namespace CringeForestLibrary
             _map = map;
 
             var rand = new Random();
-            var baselineProbability = 100.0 / _map.Height * _map.Width;
+            var baselineProbability = 100.0 / (_map.Height * _map.Width);
             for (var i = 0; i < _map.Height; i++)
             {
                 for (var j = 0; j < _map.Width; j++)
                 {
+                    Trace.WriteLine("Pixel (" + i + ", " + j + "), checking probabilities...");
                     var roll1 = rand.NextDouble();
                     if (roll1 > baselineProbability)
                     {
@@ -43,17 +46,22 @@ namespace CringeForestLibrary
                     }
                     var biomeId = _map.GetPixelBiome((i, j));
                     var animalType = DetermineType(rand, biomeId);
-                    _map.AddAnimal((i, j), 
-                        new Animal(animalType, rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j)));
+                    var animal = new Animal(animalType, 
+                        rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
+                    _animals.Add((i, j), animal);
+                    _map.AddAnimal((i, j), animal);
                 }
             }
 
             Trace.WriteLine("Simulation constructed.");
         }
 
-        public void SimulatePeriod()
+        public void SimulateTick()
         {
-            // TODO: Write a simulation of every existing animal's actions turn by turn
+            foreach (var animal in _animals.Values)
+            {
+                animal.Act(in _map, in _animals);
+            }
         }
     }
 }
