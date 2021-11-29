@@ -91,10 +91,26 @@
       "MaxAge": 5
     }
   ],
-  
+
   "BiomeSpecifications": [
     {
+      "Name": "Water",
+      "LowerBound":  0,
+      "UpperBound": 0.2,
+      "AnimalShares": {},
+      "FoodShares": {}
+    },
+    {
+      "Name": "Beach",
+      "LowerBound": 0.2,
+      "UpperBound": 0.4,
+      "AnimalShares": {},
+      "FoodShares": {}
+    },
+    {
       "Name": "Plains",
+      "LowerBound": 0.4,
+      "UpperBound": 0.65,
       "AnimalShares": {
         "Giraffe": 50,
         "Cow": 50
@@ -107,6 +123,8 @@
     },
     {
       "Name": "Forest",
+      "LowerBound": 0.65,
+      "UpperBound": 1,
       "AnimalShares": {
         "Giraffe": 15,
         "Hedgehog": 20,

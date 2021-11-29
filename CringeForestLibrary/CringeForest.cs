@@ -8,11 +8,11 @@ namespace CringeForestLibrary
 {
     public interface IMapViewer
     {
-        public void AddAnimal((int, int) coords, Animal animal);
-        public void DeleteAnimal((int, int) coords);
-        public void MoveAnimal((int, int) coords1, (int, int) coords2);
-        public void AddFood((int, int) coords, FoodSupplier food);
-        public void SetFood((int, int) coords, int saturation);
+        public void AddAnimalView((int, int) coords, Animal animal);
+        public void DeleteAnimalView((int, int) coords);
+        public void MoveAnimalView((int, int) coords1, (int, int) coords2);
+        public void AddFoodView((int, int) coords, FoodSupplier food);
+        public void SetFoodView((int, int) coords, int saturation);
     }
     
     public class CringeForest

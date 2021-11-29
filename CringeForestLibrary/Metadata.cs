@@ -14,6 +14,8 @@ namespace CringeForestLibrary
     public class BiomeSpecification
     {
         public string Name { get; set; }
+        public double LowerBound { get; set; }
+        public double UpperBound { get; set; }
         public Dictionary<int, int> AnimalShares { get; set; }
         public Dictionary<int, int> FoodShares { get; set; }
     }

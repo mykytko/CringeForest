@@ -1,146 +1,257 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CringeForestLibrary
 {
-    class PerlinNoise2D
-    {
-        private int _repeat;
-
-        public PerlinNoise2D(int repeat = -1)
-        {
-            _repeat = repeat;
-        }
-
-        private static readonly int[] Permutation = { 151,160,137,91,90,15,                 // Hash lookup table as defined by Ken Perlin.  This is a randomly
-            131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,    // arranged array of all numbers from 0-255 inclusive.
-            190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-            88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-            77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-            102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-            135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-            5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-            223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-            129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-            251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-            49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-            138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
-        };
-
-        private static readonly int[] P;                                                    // Doubled permutation to avoid overflow
-
-        static PerlinNoise2D()
-        {
-            P = new int[512];
-            for (int x = 0; x < 512; x++)
-            {
-                P[x] = Permutation[x % 256];
-            }
-        }
-
-        public double Noise(double x, double y)
-        {
-            if (_repeat > 0)
-            {                                    // If we have any repeat on, change the coordinates to their "local" repetitions
-                x = x % _repeat;
-                y = y % _repeat;
-            }
-
-            int xi = (int)x & 255;                              // Calculate the "unit square" that the point asked will be located in
-            int yi = (int)y & 255;                              // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
-            double xf = x - (int)x;                             // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that square.
-            double yf = y - (int)y;
-
-            double u = Fade(xf);
-            double v = Fade(yf);
-
-            int g1, g2, g3, g4;
-            g1 = P[P[xi] + yi];
-            g2 = P[P[Inc(xi)] + yi];
-            g3 = P[P[xi] + Inc(yi)];
-            g4 = P[P[Inc(xi)] + Inc(yi)];
-
-            double d1 = Grad(g1, xf, yf);
-            double d2 = Grad(g2, xf - 1, yf);
-            double d3 = Grad(g3, xf, yf - 1);
-            double d4 = Grad(g4, xf - 1, yf - 1);
-
-            double x1Inter = Lerp(u, d1, d2);                    // The gradient function calculates the dot product between a pseudorandom
-            double x2Inter = Lerp(u, d3, d4);                    // gradient vector and the vector from the input coordinate to the 8
-            double yInter = Lerp(v, x1Inter, x2Inter);           // surrounding points in its unit cube.
-                                                                 // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
-                                                                 // values we made earlier.
-            return (yInter + 1) / 2;                                       // For convenience we bind the result to 0 - 1 (theoretical min/max before is [-1, 1])
-        }
-        private int Inc(int num)
-        {
-            num++;
-            if (_repeat > 0) num %= _repeat;
-
-            return num;
-        }
-        private static double Grad(int hash, double x, double y)
-        {
-            switch (hash & 3)
-            {
-                case 0: return x + y;
-                case 1: return -x + y;
-                case 2: return x - y;
-                case 3: return -x - y;
-                default: return 0; //never happens
-            }
-        }
-        private static double Fade(double t)
-        {
-            // Fade function as defined by Ken Perlin.  This eases coordinate values
-            // so that they will "ease" towards integral values.  This ends up smoothing
-            // the final output.
-            return t * t * t * (t * (t * 6 - 15) + 10);         // 6t^5 - 15t^4 + 10t^3
-        }
-        private double Lerp(double amount, double left, double right)
-        {
-            return ((1 - amount) * left + amount * right);
-        }
-    }
     public class MapGenerator
     {
-        //TODO 1: match the specified size of the map (taking into account possibly different width and height of the map),
-        //the maximum size of the map in 256x256, a randomly generated displacemant
-        //and the repeat parameter in lines (1), (2), (3), (4)
-        //TODO 2: make it possible to give seed into constructor
-        private const double Scale = 0.08; //base value. the higher is scale, the rougher is the gradient
-        private double[,] _terrain; //height map, 0.3 - sea ​​level
-        private int _width;
-        private int _height;
-        private int _seed;
-        private double _displacemant;
-        private double _scale;
-        public MapGenerator(int width = 100, int height = 100) //(1)
+        public Map GenerateMap(IMapViewer mapViewer, int height = 256, int width = 256)
         {
-            Trace.WriteLine("Generating the map...");
-            _width = width;
-            _height = height;
-            _terrain = new double[width, height];
-
-            Random rnd = new Random();
-            _seed = rnd.Next(0, 100000000);
-            _scale = Scale + (_seed / 10000) / 1000000.0;
-            int firstDisplacemant = (_seed % 10000) / 100;
-            int secondDisplacemant = (_seed % 10000) % 100;
-            double k = (firstDisplacemant + secondDisplacemant) / 256.0; //(2)
-            _displacemant = firstDisplacemant / k;
+            Trace.WriteLine("Constructing the simulation...");
+            Map.Pixel[,] terrain = GenerateTerrain(height, width);
+            Dictionary<(int, int), FoodSupplier> food = GenerateFood(terrain, height, width);
+            Dictionary<(int, int), Animal> animals = GenerateAnimal(terrain, height, width);
+            Map map = new Map(mapViewer, height, width, terrain, food, animals);
+            Trace.WriteLine("Simulation constructed.");
+            return map;
         }
-        public double[,] GenerateTerrain()
+
+        private Map.Pixel[,] GenerateTerrain(int height, int width)
         {
-            PerlinNoise2D pn = new PerlinNoise2D(); //(3) P.S. it could have paremetrs
-            for (int i = 0; i < _width; i++)
+            int biggestDimension = (height > width ? height : width);
+            PerlinNoise perlinNoise = new PerlinNoise(biggestDimension);
+            Map.Pixel[,] terrain = new Map.Pixel[height, width];
+            for(int i = 0; i < height; i++)
             {
-                for (int j = 0; j < _height; j++)
+                for(int j = 0; j < width; j++)
                 {
-                    _terrain[i, j] = pn.Noise((i + _displacemant) * _scale, (j + (256 - _displacemant)) * _scale); //(4)
+                    terrain[i, j] = SelectBiome(perlinNoise.GenerateNoise(i, j));
                 }
             }
-            return _terrain;
+            return terrain;
+        }
+        private Map.Pixel SelectBiome(double value)
+        {
+            int BiomeID = -1;
+            for(int i = 0; i < Metadata.BiomeSpecifications.Count; i++)
+            {
+                if(value > Metadata.BiomeSpecifications[i].LowerBound && value < Metadata.BiomeSpecifications[i].UpperBound)
+                {
+                    BiomeID = i;
+                    break;
+                }
+            }
+            Map.Pixel pixel = new Map.Pixel(BiomeID);
+            return pixel;
+        }
+
+        private Dictionary<(int, int), FoodSupplier> GenerateFood(in Map.Pixel[,] terrain, int height, int width)
+        {
+            Dictionary<(int, int), FoodSupplier> food = new Dictionary<(int, int), FoodSupplier>();
+            var rand = new Random();
+            var averageFoodAmount = 100.0;
+            var baselineProbability = averageFoodAmount / (height * width);
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    Trace.WriteLine("Pixel (" + i + ", " + j + "), checking probabilities...");
+                    var roll1 = rand.NextDouble();
+                    if (roll1 > baselineProbability)
+                    {
+                        continue;
+                    }
+                    int biomeID = terrain[i, j].BiomeId;
+                    int foodType = DetermineFoodType(rand, biomeID);
+                    var foodSupplier = new FoodSupplier(foodType);
+                    food.Add((i, j), foodSupplier);
+                }
+            }
+            return food;
+        }
+        private int DetermineFoodType(Random rand, int biomeID)
+        {
+            var roll = rand.Next(100);
+            var foodType = 0;
+            var sum = 0;
+            while (true)
+            {
+                sum += Metadata.BiomeSpecifications[biomeID].FoodShares[foodType];
+                if (roll <= sum)
+                {
+                    break;
+                }
+                foodType++;
+            }
+
+            return foodType;
+        }
+
+        private Dictionary<(int, int), Animal> GenerateAnimal(in Map.Pixel[,] terrain, int height, int width)
+        {
+            Dictionary<(int, int), Animal> animals = new Dictionary<(int, int), Animal>();
+            var rand = new Random();
+            var averageAnimalAmount = 100.0;
+            var baselineProbability = averageAnimalAmount / (height * width);
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    Trace.WriteLine("Pixel (" + i + ", " + j + "), checking probabilities...");
+                    var roll1 = rand.NextDouble();
+                    if (roll1 > baselineProbability)
+                    {
+                        continue;
+                    }
+                    int biomeID = terrain[i, j].BiomeId;
+                    int animalType = DetermineAnimalType(rand, biomeID);
+                    var animal = new Animal(animalType,
+                        rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
+                    animals.Add((i, j), animal);
+                }
+            }
+            return animals;
+        }
+        private int DetermineAnimalType(Random rand, int biomeID)
+        {
+            var roll = rand.Next(100);
+            var animalType = 0;
+            var sum = 0;
+            while (true)
+            {
+                sum += Metadata.BiomeSpecifications[biomeID].AnimalShares[animalType];
+                if (roll <= sum)
+                {
+                    break;
+                }
+                animalType++;
+            }
+
+            return animalType;
+        }
+        private class PerlinNoise
+        {
+            //TODO1: work with seed: make seed-influenced: parametrs below, biome boundaries, avarage*Amount in MapGenerator.Generate*(also influenced by map size), seed for var rand in MapGenerator.Generate*
+            //TODO2: work with biome boundaries in json and MapGenerator.SelectBiome: improve, make seed-influenced, generate different regions, were boundaries will be quite different
+            //TODO3: extend json variety, change spawn-rate type from int to double
+            //TODO: comments(also with basic values for fields), renames(2 moments), formating, acces modificators(readonly included), excaptions catch, static classes and constructors and generics, pair coordinates into one type (int, int)
+            private int _size;
+            private int[] _permutation;
+            private int[] _p;
+            private double _a_fade, _b_fade, _c_fade;
+            private int _octaves;
+            private double _startScale;
+            private double _startInfluence;
+            private double _scaleMultiplier;
+            private double _influenceMultiplier;
+
+            public PerlinNoise(int size = 256)
+            {
+                _size = size;
+
+                _permutation = new int[_size];
+                _p = new int[_size * 2];
+                for (int i = 0; i < _size; i++)
+                {
+                    _permutation[i] = i;
+                }
+                MakePermutation();
+                for (int i = 0; i < _size * 2; i++)
+                {
+                    _p[i] = _permutation[i % _size];
+                }
+
+                _a_fade = 6;
+                _b_fade = -15;
+                _c_fade = 10;
+
+                _octaves = 1;
+                _startScale = 0.05;
+                _startInfluence = 1;
+                _scaleMultiplier = 2;
+                _influenceMultiplier = 0.2;
+            }
+
+            public double GenerateNoise(double x, double y)
+            {
+                double sum = 0;
+                double maxSum = 0;
+                double scale = _startScale;
+                double influence = _startInfluence;
+                for (int i = 0; i < _octaves; i++)
+                {
+                    sum += MakeOneNoise(x * scale, y * scale) * influence;
+                    maxSum += influence;
+                    scale *= _scaleMultiplier;
+                    influence *= _influenceMultiplier;
+                }
+
+                return sum / maxSum;
+            }
+
+            private double MakeOneNoise(double x, double y)
+            {
+                int xi = (int)x % _size;
+                int yi = (int)y % _size;
+                double xf = x - (int)x;
+                double yf = y - (int)y;
+
+                double u = Fade(xf);
+                double v = Fade(yf);
+
+                int g1 = _p[_p[xi] + yi];
+                int g2 = _p[_p[Inc(xi)] + yi];
+                int g3 = _p[_p[xi] + Inc(yi)];
+                int g4 = _p[_p[Inc(xi)] + Inc(yi)];
+
+                double d1 = Grad(g1, xf, yf);
+                double d2 = Grad(g2, xf - 1, yf);
+                double d3 = Grad(g3, xf, yf - 1);
+                double d4 = Grad(g4, xf - 1, yf - 1);
+
+                double x1Inter = Interpolate(u, d1, d2);
+                double x2Inter = Interpolate(u, d3, d4);
+                double yInter = Interpolate(v, x1Inter, x2Inter);
+
+                return (yInter + 1) / 2;
+            }
+
+            private void MakePermutation()
+            {
+                var rand = new Random();
+                for (int i = _size - 1; i >= 0; i--)
+                {
+                    int j = rand.Next(0, i + 1);
+                    int temp = _permutation[i];
+                    _permutation[i] = _permutation[j];
+                    _permutation[j] = temp;
+                }
+            }
+            private double Fade(double x)
+            {
+                return x * x * x * (x * (x * _a_fade + _b_fade) + _c_fade);
+            }
+            private int Inc(int n)
+            {
+                n++;
+                return n;
+            }
+            private double Grad(int hash, double x, double y)
+            {
+                switch (hash & 3)
+                {
+                    case 0: return x + y;
+                    case 1: return -x + y;
+                    case 2: return x - y;
+                    case 3: return -x - y;
+                    default: return 0;
+                }
+            }
+            private double Interpolate(double amount, double left, double right)
+            {
+                return ((1 - amount) * left + amount * right);
+            }
         }
     }
 }
