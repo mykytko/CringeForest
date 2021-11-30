@@ -4,108 +4,117 @@ using System.Diagnostics;
 
 namespace CringeForestLibrary
 {
-    public class MapGenerator
+    public static class MapGenerator
     {
-        public Map GenerateMap(IMapViewer mapViewer, int height = 256, int width = 256)
+        public static Map GenerateMap(IMapViewer mapViewer, int height = 256, int width = 256)
         {
-            Trace.WriteLine("Constructing the simulation...");
-            Map.Pixel[,] terrain = GenerateTerrain(height, width);
-            Dictionary<(int, int), FoodSupplier> food = GenerateFood(terrain, height, width);
-            Dictionary<(int, int), Animal> animals = GenerateAnimal(terrain, height, width);
-            Map map = new Map(mapViewer, height, width, terrain, food, animals);
-            Trace.WriteLine("Simulation constructed.");
+            Trace.WriteLine("Generating the map...");
+            var terrain = GenerateTerrain(height, width);
+            var food = GenerateFoodSuppliers(terrain, height, width);
+            var animals = GenerateAnimals(terrain, height, width);
+            var map = new Map(mapViewer, height, width, terrain, food, animals);
+            Trace.WriteLine("The map has been generated.");
             return map;
         }
 
-        private Map.Pixel[,] GenerateTerrain(int height, int width)
+        private static Map.Pixel[,] GenerateTerrain(int height, int width)
         {
-            int biggestDimension = (height > width ? height : width);
-            PerlinNoise perlinNoise = new PerlinNoise(biggestDimension);
-            Map.Pixel[,] terrain = new Map.Pixel[height, width];
-            for(int i = 0; i < height; i++)
+            var biggestDimension = (height > width ? height : width);
+            var perlinNoise = new PerlinNoise(biggestDimension);
+            var terrain = new Map.Pixel[height, width];
+            for(var i = 0; i < height; i++)
             {
-                for(int j = 0; j < width; j++)
+                for(var j = 0; j < width; j++)
                 {
                     terrain[i, j] = SelectBiome(perlinNoise.GenerateNoise(i, j));
                 }
             }
             return terrain;
         }
-        private Map.Pixel SelectBiome(double value)
+        private static Map.Pixel SelectBiome(double value)
         {
-            int BiomeID = -1;
-            for(int i = 0; i < Metadata.BiomeSpecifications.Count; i++)
+            var biomeId = -1;
+            for(var i = 0; i < Metadata.BiomeSpecifications.Count; i++)
             {
-                if(value > Metadata.BiomeSpecifications[i].LowerBound && value < Metadata.BiomeSpecifications[i].UpperBound)
+                if (value <= Metadata.BiomeSpecifications[i].LowerBound ||
+                    value >= Metadata.BiomeSpecifications[i].UpperBound)
                 {
-                    BiomeID = i;
-                    break;
+                    continue;
                 }
+                biomeId = i;
+                break;
             }
-            Map.Pixel pixel = new Map.Pixel(BiomeID);
+            var pixel = new Map.Pixel(biomeId);
             return pixel;
         }
 
-        private Dictionary<(int, int), FoodSupplier> GenerateFood(in Map.Pixel[,] terrain, int height, int width)
+        private static Dictionary<(int, int), FoodSupplier> GenerateFoodSuppliers(in Map.Pixel[,] terrain, 
+            int height, int width)
         {
-            Dictionary<(int, int), FoodSupplier> food = new Dictionary<(int, int), FoodSupplier>();
+            var food = new Dictionary<(int, int), FoodSupplier>();
             var rand = new Random();
-            var averageFoodAmount = 100.0;
+            const double averageFoodAmount = 100.0;
             var baselineProbability = averageFoodAmount / (height * width);
-            for (int i = 0; i < height; i++)
+            for (var i = 0; i < height; i++)
             {
-                for (int j = 0; j < width; j++)
+                for (var j = 0; j < width; j++)
                 {
-                    Trace.WriteLine("Pixel (" + i + ", " + j + "), checking probabilities...");
                     var roll1 = rand.NextDouble();
                     if (roll1 > baselineProbability)
                     {
                         continue;
                     }
-                    int biomeID = terrain[i, j].BiomeId;
-                    int foodType = DetermineFoodType(rand, biomeID);
+                    var biomeId = terrain[i, j].BiomeId;
+                    var foodType = DetermineFoodType(rand, biomeId);
+                    if (foodType == -1)
+                    {
+                        continue;
+                    }
                     var foodSupplier = new FoodSupplier(foodType);
                     food.Add((i, j), foodSupplier);
+                    Trace.WriteLine(Metadata.FoodSpecifications[foodType].Name 
+                                    + " at position (" + i + ", " + j + ") was created");
                 }
             }
             return food;
         }
-        private int DetermineFoodType(Random rand, int biomeID)
+        private static int DetermineFoodType(Random rand, int biomeId)
         {
             var roll = rand.Next(100);
-            var foodType = 0;
             var sum = 0;
-            while (true)
+            var result = -1;
+            foreach (var (foodId, foodShare) in Metadata.BiomeSpecifications[biomeId].FoodShares)
             {
-                sum += Metadata.BiomeSpecifications[biomeID].FoodShares[foodType];
-                if (roll <= sum)
-                {
-                    break;
-                }
-                foodType++;
+                sum += foodShare;
+                if (roll > sum) continue;
+                result = foodId;
+                break;
             }
 
-            return foodType;
+            return result;
         }
 
-        private Dictionary<(int, int), Animal> GenerateAnimal(in Map.Pixel[,] terrain, int height, int width)
+        private static Dictionary<(int, int), Animal> GenerateAnimals(in Map.Pixel[,] terrain, int height, int width)
         {
-            Dictionary<(int, int), Animal> animals = new Dictionary<(int, int), Animal>();
+            var animals = new Dictionary<(int, int), Animal>();
             var rand = new Random();
-            var averageAnimalAmount = 100.0;
+            const double averageAnimalAmount = 100.0;
             var baselineProbability = averageAnimalAmount / (height * width);
-            for (int i = 0; i < height; i++)
+            for (var i = 0; i < height; i++)
             {
-                for (int j = 0; j < width; j++)
+                for (var j = 0; j < width; j++)
                 {
-                    Trace.WriteLine("Pixel (" + i + ", " + j + "), checking probabilities...");
                     var roll1 = rand.NextDouble();
                     if (roll1 > baselineProbability)
                     {
                         continue;
                     }
-                    int biomeID = terrain[i, j].BiomeId;
-                    int animalType = DetermineAnimalType(rand, biomeID);
+                    var biomeId = terrain[i, j].BiomeId;
+                    var animalType = DetermineAnimalType(rand, biomeId);
+                    if (animalType == -1)
+                    {
+                        continue;
+                    }
                     var animal = new Animal(animalType,
                         rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
                     animals.Add((i, j), animal);
@@ -113,38 +122,46 @@ namespace CringeForestLibrary
             }
             return animals;
         }
-        private int DetermineAnimalType(Random rand, int biomeID)
+        
+        private static int DetermineAnimalType(Random rand, int biomeId)
         {
             var roll = rand.Next(100);
-            var animalType = 0;
             var sum = 0;
-            while (true)
+            var result = -1;
+            foreach (var (animalId, animalShare) in Metadata.BiomeSpecifications[biomeId].AnimalShares)
             {
-                sum += Metadata.BiomeSpecifications[biomeID].AnimalShares[animalType];
-                if (roll <= sum)
-                {
-                    break;
-                }
-                animalType++;
+                sum += animalShare;
+                if (roll > sum) continue;
+                result = animalId;
+                break;
             }
 
-            return animalType;
+            return result;
         }
+        
         private class PerlinNoise
         {
-            //TODO1: work with seed: make seed-influenced: parametrs below, biome boundaries, avarage*Amount in MapGenerator.Generate*(also influenced by map size), seed for var rand in MapGenerator.Generate*
-            //TODO2: work with biome boundaries in json and MapGenerator.SelectBiome: improve, make seed-influenced, generate different regions, were boundaries will be quite different
+            //TODO1: work with seed: make seed-influenced: parameters below, biome boundaries,
+            //average*Amount in MapGenerator.Generate*(also influenced by map size), seed for var rand in
+            //MapGenerator.Generate*
+            //TODO2: work with biome boundaries in json and MapGenerator.SelectBiome: improve,
+            //make seed-influenced, generate different regions, were boundaries will be quite different
             //TODO3: extend json variety, change spawn-rate type from int to double
-            //TODO: comments(also with basic values for fields), renames(2 moments), formating, acces modificators(readonly included), excaptions catch, static classes and constructors and generics, pair coordinates into one type (int, int)
-            private int _size;
-            private int[] _permutation;
-            private int[] _p;
-            private double _a_fade, _b_fade, _c_fade;
-            private int _octaves;
-            private double _startScale;
-            private double _startInfluence;
-            private double _scaleMultiplier;
-            private double _influenceMultiplier;
+            //TODO: comments(also with basic values for fields), renames(2 moments), formatting,
+            //access modifiers(readonly included), excaptions catch, static classes and constructors and generics,
+            //pair coordinates into one type (int, int)
+            
+            private readonly int _size;
+            private readonly int[] _permutation;
+            private readonly int[] _p;
+            private readonly double _aFade;
+            private readonly double _bFade;
+            private readonly double _cFade;
+            private readonly int _octaves;
+            private readonly double _startScale;
+            private readonly double _startInfluence;
+            private readonly double _scaleMultiplier;
+            private readonly double _influenceMultiplier;
 
             public PerlinNoise(int size = 256)
             {
@@ -152,7 +169,7 @@ namespace CringeForestLibrary
 
                 _permutation = new int[_size];
                 _p = new int[_size * 2];
-                for (int i = 0; i < _size; i++)
+                for (var i = 0; i < _size; i++)
                 {
                     _permutation[i] = i;
                 }
@@ -162,9 +179,9 @@ namespace CringeForestLibrary
                     _p[i] = _permutation[i % _size];
                 }
 
-                _a_fade = 6;
-                _b_fade = -15;
-                _c_fade = 10;
+                _aFade = 6;
+                _bFade = -15;
+                _cFade = 10;
 
                 _octaves = 1;
                 _startScale = 0.05;
@@ -177,9 +194,9 @@ namespace CringeForestLibrary
             {
                 double sum = 0;
                 double maxSum = 0;
-                double scale = _startScale;
-                double influence = _startInfluence;
-                for (int i = 0; i < _octaves; i++)
+                var scale = _startScale;
+                var influence = _startInfluence;
+                for (var i = 0; i < _octaves; i++)
                 {
                     sum += MakeOneNoise(x * scale, y * scale) * influence;
                     maxSum += influence;
@@ -192,27 +209,27 @@ namespace CringeForestLibrary
 
             private double MakeOneNoise(double x, double y)
             {
-                int xi = (int)x % _size;
-                int yi = (int)y % _size;
-                double xf = x - (int)x;
-                double yf = y - (int)y;
+                var xi = (int)x % _size;
+                var yi = (int)y % _size;
+                var xf = x - (int)x;
+                var yf = y - (int)y;
 
-                double u = Fade(xf);
-                double v = Fade(yf);
+                var u = Fade(xf);
+                var v = Fade(yf);
 
-                int g1 = _p[_p[xi] + yi];
-                int g2 = _p[_p[Inc(xi)] + yi];
-                int g3 = _p[_p[xi] + Inc(yi)];
-                int g4 = _p[_p[Inc(xi)] + Inc(yi)];
+                var g1 = _p[_p[xi] + yi];
+                var g2 = _p[_p[Inc(xi)] + yi];
+                var g3 = _p[_p[xi] + Inc(yi)];
+                var g4 = _p[_p[Inc(xi)] + Inc(yi)];
 
-                double d1 = Grad(g1, xf, yf);
-                double d2 = Grad(g2, xf - 1, yf);
-                double d3 = Grad(g3, xf, yf - 1);
-                double d4 = Grad(g4, xf - 1, yf - 1);
+                var d1 = Grad(g1, xf, yf);
+                var d2 = Grad(g2, xf - 1, yf);
+                var d3 = Grad(g3, xf, yf - 1);
+                var d4 = Grad(g4, xf - 1, yf - 1);
 
-                double x1Inter = Interpolate(u, d1, d2);
-                double x2Inter = Interpolate(u, d3, d4);
-                double yInter = Interpolate(v, x1Inter, x2Inter);
+                var x1Inter = Interpolate(u, d1, d2);
+                var x2Inter = Interpolate(u, d3, d4);
+                var yInter = Interpolate(v, x1Inter, x2Inter);
 
                 return (yInter + 1) / 2;
             }
@@ -220,37 +237,35 @@ namespace CringeForestLibrary
             private void MakePermutation()
             {
                 var rand = new Random();
-                for (int i = _size - 1; i >= 0; i--)
+                for (var i = _size - 1; i >= 0; i--)
                 {
-                    int j = rand.Next(0, i + 1);
-                    int temp = _permutation[i];
-                    _permutation[i] = _permutation[j];
-                    _permutation[j] = temp;
+                    var j = rand.Next(0, i + 1);
+                    (_permutation[i], _permutation[j]) = (_permutation[j], _permutation[i]);
                 }
             }
             private double Fade(double x)
             {
-                return x * x * x * (x * (x * _a_fade + _b_fade) + _c_fade);
+                return x * x * x * (x * (x * _aFade + _bFade) + _cFade);
             }
-            private int Inc(int n)
+            private static int Inc(int n)
             {
                 n++;
                 return n;
             }
-            private double Grad(int hash, double x, double y)
+            private static double Grad(int hash, double x, double y)
             {
-                switch (hash & 3)
+                return (hash & 3) switch
                 {
-                    case 0: return x + y;
-                    case 1: return -x + y;
-                    case 2: return x - y;
-                    case 3: return -x - y;
-                    default: return 0;
-                }
+                    0 => x + y,
+                    1 => -x + y,
+                    2 => x - y,
+                    3 => -x - y,
+                    _ => 0
+                };
             }
-            private double Interpolate(double amount, double left, double right)
+            private static double Interpolate(double amount, double left, double right)
             {
-                return ((1 - amount) * left + amount * right);
+                return (1 - amount) * left + amount * right;
             }
         }
     }

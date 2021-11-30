@@ -131,6 +131,7 @@ namespace CringeForestLibrary
             
             Position = coords;
             map.MoveAnimal(Position, coords);
+            Trace.WriteLine("Animal " + Id + Metadata.AnimalSpecifications[Type].Name + "acted");
         }
     }
 }

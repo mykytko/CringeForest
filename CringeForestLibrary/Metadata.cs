@@ -131,7 +131,6 @@ namespace CringeForestLibrary
             Debug.Assert(biomeSpecsJson != null, nameof(biomeSpecsJson) + " != null");
             
             FoodSpecifications = JsonSerializer.Deserialize<List<FoodSpecification>>(foodSpecsJson);
-            Trace.WriteLine(foodSpecsJson);
 
             var tempFoodDictionary = new Dictionary<string, int>();
             Debug.Assert(FoodSpecifications != null, nameof(FoodSpecifications) + " != null");
@@ -143,7 +142,7 @@ namespace CringeForestLibrary
             ReplaceNamesById(ref animalSpecsJson, "FoodTypes",
                 match => tempFoodDictionary[match.Value[1..^1]].ToString());
             AnimalSpecifications = JsonSerializer.Deserialize<List<AnimalSpecification>>(animalSpecsJson);
-
+            
             var tempAnimalDictionary = new Dictionary<string, int>();
             Debug.Assert(AnimalSpecifications != null, nameof(AnimalSpecifications) + " != null");
             for (var i = 0; i < AnimalSpecifications.Count; i++)
@@ -151,7 +150,7 @@ namespace CringeForestLibrary
                 Debug.Assert(AnimalSpecifications != null, nameof(AnimalSpecifications) + " != null");
                 tempAnimalDictionary.Add(AnimalSpecifications[i].Name, i);
             }
-            
+
             ReplaceNamesById(ref biomeSpecsJson, "FoodShares", 
                 match => '"' + tempFoodDictionary[match.Value[1..^1]].ToString() + '"');
             ReplaceNamesById(ref biomeSpecsJson, "AnimalShares", 

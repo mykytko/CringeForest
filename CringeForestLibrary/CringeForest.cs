@@ -103,7 +103,7 @@ namespace CringeForestLibrary
             // if none are found - use default params and/or generate a new map
             // after everything is loaded, we can start the simulation
             
-            var map = new Map(_mapViewer, _animalSimulation);
+            var map = MapGenerator.GenerateMap(_mapViewer);
             _animalSimulation = new AnimalSimulation(map);
             
             MainLoop();
