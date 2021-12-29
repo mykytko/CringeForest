@@ -10,8 +10,14 @@ namespace CringeForestLibrary
         {
             Trace.WriteLine("Generating the map...");
             var terrain = GenerateTerrain(height, width);
-            var food = GenerateFoodSuppliers(terrain, height, width);
-            var animals = GenerateAnimals(terrain, height, width);
+            //---///
+            GenerateFood gf = new GenerateFood();
+            var food = gf.TemplateGenerate(terrain, height, width);
+            GenerateAnimal ga = new GenerateAnimal();
+            var animals = ga.TemplateGenerate(terrain, height, width);
+            //---//
+            //var food = GenerateFoodSuppliers(terrain, height, width);
+            //var animals = GenerateAnimals(terrain, height, width);
             var map = new Map(mapViewer, height, width, terrain, food, animals);
             Trace.WriteLine("The map has been generated.");
             return map;
@@ -47,7 +53,100 @@ namespace CringeForestLibrary
             var pixel = new Map.Pixel(biomeId);
             return pixel;
         }
+        //---//
+        private abstract class Generate<T>
+        {
+            public T TemplateGenerate(in Map.Pixel[,] terrain, int height, int width)
+            {
+                var result = InitT();
+                var rand = new Random();
+                const double averageAmount = 100.0;
+                var baselineProbability = averageAmount / (height * width);
+                for (var i = 0; i < height; i++)
+                {
+                    for (var j = 0; j < width; j++)
+                    {
+                        var roll1 = rand.NextDouble();
+                        if (roll1 > baselineProbability)
+                        {
+                            continue;
+                        }
+                        var biomeId = terrain[i, j].BiomeId;
+                        var resultType = DetermineResultType(rand, biomeId);
+                        if (resultType == -1)
+                        {
+                            continue;
+                        }
+                        result = DoSmth(i, j, resultType, rand);
+                    }
+                }
+                return result;
+            }
+            protected abstract T InitT();
+            protected abstract int DetermineResultType(Random rand, int biomeId);
+            protected abstract T DoSmth(int i, int j, int resultType, Random rand);
+        }
+        private class GenerateFood : Generate<Dictionary<(int, int), FoodSupplier>>
+        {
+            protected override Dictionary<(int, int), FoodSupplier> InitT()
+            {
+                return new Dictionary<(int, int), FoodSupplier>();
+            }
+            protected override int DetermineResultType(Random rand, int biomeId)
+            {
+                var roll = rand.Next(100);
+                var sum = 0;
+                var result = -1;
+                foreach (var (foodId, foodShare) in Metadata.BiomeSpecifications[biomeId].FoodShares)
+                {
+                    sum += foodShare;
+                    if (roll > sum) continue;
+                    result = foodId;
+                    break;
+                }
 
+                return result;
+            }
+            protected override Dictionary<(int, int), FoodSupplier> DoSmth(int i, int j, int resultType, Random rand)
+            {
+                var food = new Dictionary<(int, int), FoodSupplier>();
+                var foodSupplier = new FoodSupplier(resultType);
+                food.Add((i, j), foodSupplier);
+                return food;
+            }
+        }
+        private class GenerateAnimal : Generate<Dictionary<(int, int), Animal>>
+        {
+            protected override Dictionary<(int, int), Animal> InitT()
+            {
+                return new Dictionary<(int, int), Animal>();
+            }
+            protected override int DetermineResultType(Random rand, int biomeId)
+            {
+                var roll = rand.Next(100);
+                var sum = 0;
+                var result = -1;
+                foreach (var (animalId, animalShare) in Metadata.BiomeSpecifications[biomeId].AnimalShares)
+                {
+                    sum += animalShare;
+                    if (roll > sum) continue;
+                    result = animalId;
+                    break;
+                }
+
+                return result;
+            }
+            protected override Dictionary<(int, int), Animal> DoSmth(int i, int j, int resultType, Random rand)
+            {
+                var animals = new Dictionary<(int, int), Animal>();
+                var animal = new Animal(resultType,
+                        rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
+                animals.Add((i, j), animal);
+                return animals;
+            }
+        }
+        //---//
+        /*
         private static Dictionary<(int, int), FoodSupplier> GenerateFoodSuppliers(in Map.Pixel[,] terrain, 
             int height, int width)
         {
@@ -138,7 +237,7 @@ namespace CringeForestLibrary
             }
 
             return result;
-        }
+        }*/
         
         private class PerlinNoise
         {
