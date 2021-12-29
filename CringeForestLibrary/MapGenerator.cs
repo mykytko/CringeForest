@@ -78,6 +78,7 @@ namespace CringeForestLibrary
             }
             return food;
         }
+        
         private static int DetermineFoodType(Random rand, int biomeId)
         {
             var roll = rand.Next(100);

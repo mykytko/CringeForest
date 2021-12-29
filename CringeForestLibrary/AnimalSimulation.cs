@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CringeForestLibrary
@@ -11,14 +12,30 @@ namespace CringeForestLibrary
         {
             Trace.WriteLine("Initializing the animal simulation...");
             _map = map;
+            Animal.SetMap(in map);
         }
 
         public void SimulateTick()
         {
             var animals = _map.EnumerateAnimals();
+            var dict = new Dictionary<int, int>();
             foreach (var animal in animals.Values)
             {
                 animal.Act(in _map, in animals);
+                if (!dict.ContainsKey(animal.Type))
+                {
+                    dict.Add(animal.Type, 1);
+                }
+                else
+                {
+                    dict[animal.Type] += 1;
+                }
+            }
+
+            Trace.WriteLine("The populations are:");
+            foreach (var type in dict.Keys)
+            {
+                Trace.WriteLine(dict[type] + " of " + Metadata.AnimalSpecifications[type].Name);
             }
         }
     }
