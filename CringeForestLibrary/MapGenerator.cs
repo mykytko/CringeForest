@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -11,10 +12,10 @@ namespace CringeForestLibrary
             Trace.WriteLine("Generating the map...");
             var terrain = GenerateTerrain(height, width);
             //---///
-            GenerateFood gf = new GenerateFood();
-            var food = gf.TemplateGenerate(terrain, height, width);
-            GenerateAnimal ga = new GenerateAnimal();
-            var animals = ga.TemplateGenerate(terrain, height, width);
+            var foodGenerator = new GenerateFood();
+            var food = foodGenerator.TemplateGenerate(terrain, height, width);
+            var animalGenerator = new GenerateAnimal();
+            var animals = animalGenerator.TemplateGenerate(terrain, height, width);
             //---//
             //var food = GenerateFoodSuppliers(terrain, height, width);
             //var animals = GenerateAnimals(terrain, height, width);
@@ -77,14 +78,14 @@ namespace CringeForestLibrary
                         {
                             continue;
                         }
-                        result = DoSmth(i, j, resultType, rand);
+                        GenerateInstance(in result, i, j, resultType, rand);
                     }
                 }
                 return result;
             }
             protected abstract T InitT();
             protected abstract int DetermineResultType(Random rand, int biomeId);
-            protected abstract T DoSmth(int i, int j, int resultType, Random rand);
+            protected abstract void GenerateInstance(in T collection, int i, int j, int resultType, Random rand);
         }
         private class GenerateFood : Generate<Dictionary<(int, int), FoodSupplier>>
         {
@@ -107,19 +108,17 @@ namespace CringeForestLibrary
 
                 return result;
             }
-            protected override Dictionary<(int, int), FoodSupplier> DoSmth(int i, int j, int resultType, Random rand)
+            protected override void GenerateInstance(in Dictionary<(int, int), FoodSupplier> collection, int i, int j, int resultType, Random rand)
             {
-                var food = new Dictionary<(int, int), FoodSupplier>();
                 var foodSupplier = new FoodSupplier(resultType);
-                food.Add((i, j), foodSupplier);
-                return food;
+                collection.Add((i, j), foodSupplier);
             }
         }
-        private class GenerateAnimal : Generate<Dictionary<(int, int), Animal>>
+        private class GenerateAnimal : Generate<ConcurrentDictionary<(int, int), Animal>>
         {
-            protected override Dictionary<(int, int), Animal> InitT()
+            protected override ConcurrentDictionary<(int, int), Animal> InitT()
             {
-                return new Dictionary<(int, int), Animal>();
+                return new ConcurrentDictionary<(int, int), Animal>();
             }
             protected override int DetermineResultType(Random rand, int biomeId)
             {
@@ -136,13 +135,12 @@ namespace CringeForestLibrary
 
                 return result;
             }
-            protected override Dictionary<(int, int), Animal> DoSmth(int i, int j, int resultType, Random rand)
+            protected override void GenerateInstance(
+                in ConcurrentDictionary<(int, int), Animal> collection, int i, int j, int resultType, Random rand)
             {
-                var animals = new Dictionary<(int, int), Animal>();
                 var animal = new Animal(resultType,
                         rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
-                animals.Add((i, j), animal);
-                return animals;
+                collection.TryAdd((i, j), animal);
             }
         }
         //---//

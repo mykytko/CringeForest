@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -21,10 +22,10 @@ namespace CringeForestLibrary
 
         private readonly Pixel[,] _matrix;
         private readonly Dictionary<(int, int), FoodSupplier> _food;
-        private readonly Dictionary<(int, int), Animal> _animals;
+        private readonly ConcurrentDictionary<(int, int), Animal> _animals;
 
         public Map(IMapViewer mapViewer, int height, int width, Pixel[,] matrix, 
-            Dictionary<(int, int), FoodSupplier> food, Dictionary<(int, int), Animal> animals)
+            Dictionary<(int, int), FoodSupplier> food, ConcurrentDictionary<(int, int), Animal> animals)
         {
             Trace.WriteLine("Preparing the map...");
             Height = height;
@@ -32,6 +33,10 @@ namespace CringeForestLibrary
             _matrix = matrix;
             _food = food;
             _animals = animals;
+            foreach (var animal in animals)
+            {
+                Trace.WriteLine(animal.Value.Sex + " " + Metadata.AnimalSpecifications[animal.Value.Type].Name);
+            }
             _mapViewer = mapViewer;
             Trace.WriteLine("The map is initialized");
         }
@@ -42,13 +47,13 @@ namespace CringeForestLibrary
 
         public void AddAnimal((int, int) coords, Animal animal)
         {
-            _animals.Add(coords, animal);
+            _animals.TryAdd(coords, animal);
             _mapViewer.AddAnimalView(coords, animal);
         }
 
         public void DeleteAnimal((int, int) coords)
         {
-            _animals.Remove(coords);
+            _animals.TryRemove(coords, out _);
             _mapViewer.DeleteAnimalView(coords);
         }
 
@@ -73,7 +78,7 @@ namespace CringeForestLibrary
             return !_food.ContainsKey(coords) ? null : _food[coords];
         }
 
-        public Dictionary<(int, int), Animal> EnumerateAnimals()
+        public ConcurrentDictionary<(int, int), Animal> EnumerateAnimals()
         {
             return _animals;
         }

@@ -19,16 +19,20 @@ namespace CringeForestLibrary
         {
             var animals = _map.EnumerateAnimals();
             var dict = new Dictionary<int, int>();
-            foreach (var animal in animals.Values)
+            foreach (var animal in animals)
             {
-                animal.Act(in _map, in animals);
-                if (!dict.ContainsKey(animal.Type))
+                animal.Value.Act(in _map, in animals);
+                if (animal.Value.Saturation <= 0)
                 {
-                    dict.Add(animal.Type, 1);
+                    _map.DeleteAnimal(animal.Value.Position);
+                }
+                if (!dict.ContainsKey(animal.Value.Type))
+                {
+                    dict.Add(animal.Value.Type, 1);
                 }
                 else
                 {
-                    dict[animal.Type] += 1;
+                    dict[animal.Value.Type] += 1;
                 }
             }
 

@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace CringeForestLibrary
 {
@@ -15,7 +15,7 @@ namespace CringeForestLibrary
     {
         private const double HungerThreshold = 0.1;
 
-        public (int, int) Think(int type, int saturation, (int, int) position, in Map map, int FOV)
+        public (int, int) Think(int type, int saturation, (int, int) position, in Map map, int fov)
         {
             var spec = Metadata.AnimalSpecifications[type];
             // check for predators
@@ -24,24 +24,38 @@ namespace CringeForestLibrary
             // check if you're hungry
             // decide to search for food or for partners
 
-            var coords = HandlePredators(type, position, in map, FOV);
+            var coords = HandlePredators(type, position, in map, fov);
             if (coords != (-1, -1))
             {
                 return coords;
             }
             
             var pos = Hungry(saturation, spec.FoodIntake) ? 
-                LookForFood(type, position, in map, FOV) : LookForPartners(type, position, in map, FOV);
+                LookForFood(type, position, in map, fov) : LookForPartners(type, position, in map, fov);
             
             if (pos == (-1, -1))
             {
                 var rand = new Random();
-                pos.Item1 = rand.Next(spec.Speed);
-                pos.Item2 = spec.Speed - pos.Item1;
+                pos.Item1 = (rand.Next(2) == 0 ? 1 : -1) * rand.Next(2 * spec.Speed);
+                pos.Item2 = (rand.Next(2) == 0 ? 1 : -1) * (spec.Speed - Math.Abs(pos.Item1));
                 var k = rand.NextDouble();
                 pos.Item1 = (int) Math.Floor(k * pos.Item1);
                 pos.Item2 = (int) Math.Floor(k * pos.Item2);
-                return pos;
+                
+                var x = pos.Item1 + position.Item1;
+                var y = pos.Item2 + position.Item2;
+                
+                if (x < 0)
+                {
+                    x = 0;
+                }
+
+                if (y < 0)
+                {
+                    y = 0;
+                }
+                
+                return (x, y);
             }
 
             var distance = Math.Sqrt(Math.Pow(pos.Item1 - position.Item1, 2) 
@@ -63,18 +77,23 @@ namespace CringeForestLibrary
             return saturation < HungerThreshold * foodIntake;
         }
 
-        public abstract (int, int) HandlePredators(int type, (int, int) position, in Map map, int FOV);
+        public abstract (int, int) HandlePredators(int type, (int, int) position, in Map map, int fov);
 
-        public abstract (int, int) LookForFood(int type, (int, int) position, in Map map, int FOV);
+        public abstract (int, int) LookForFood(int type, (int, int) position, in Map map, int fov);
 
-        protected (int, int) LookForPartners(int type, (int, int) position, in Map map, int FOV)
+        protected (int, int) LookForPartners(int type, (int, int) position, in Map map, int fov)
         {
             var possiblePartners = new List<Animal>();
-            for (var i = position.Item2 - FOV; i < position.Item2 + FOV; i++)
+            for (var i = position.Item2 - fov; i < position.Item2 + fov; i++)
             {
-                for (var j = position.Item1 - FOV; i < position.Item1 + FOV; i++)
+                for (var j = position.Item1 - fov; i < position.Item1 + fov; i++)
                 {
-                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > FOV * FOV)
+                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > fov * fov)
+                    {
+                        continue;
+                    }
+
+                    if ((i, j) == position)
                     {
                         continue;
                     }
@@ -101,7 +120,7 @@ namespace CringeForestLibrary
             {
                 var newDistance = Math.Pow(position.Item1 - partner.Position.Item1, 2)
                                   + Math.Pow(position.Item2 - partner.Position.Item2, 2);
-                if (!(newDistance < distance)) continue;
+                if (newDistance >= distance) continue;
                 closestPartner = partner;
                 distance = newDistance;
             }
@@ -109,15 +128,20 @@ namespace CringeForestLibrary
             return closestPartner.Position;
         }
 
-        protected (int, int) FindStrongestPredator(int type, (int, int) position, in Map map, int FOV)
+        protected (int, int) FindStrongestPredator(int type, (int, int) position, in Map map, int fov)
         {
             var maxIntake = 0;
             Animal predator = null;
-            for (var i = position.Item2 - FOV; i < position.Item2 + FOV; i++)
+            for (var i = position.Item2 - fov; i < position.Item2 + fov; i++)
             {
-                for (var j = position.Item1 - FOV; i < position.Item1 + FOV; i++)
+                for (var j = position.Item1 - fov; i < position.Item1 + fov; i++)
                 {
-                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > FOV * FOV)
+                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > fov * fov)
+                    {
+                        continue;
+                    }
+                    
+                    if ((i, j) == position)
                     {
                         continue;
                     }
@@ -137,20 +161,25 @@ namespace CringeForestLibrary
             return predator?.Position ?? (-1, -1);
         }
 
-        protected (int, int) FindBestFood(int type, (int, int) position, in Map map, int FOV)
+        protected (int, int) FindBestFood(int type, (int, int) position, in Map map, int fov)
         {
             var maxSaturation = 0;
             (int, int) food = (-1, -1);
-            for (var i = position.Item2 - FOV; i < position.Item2 + FOV; i++)
+            for (var i = position.Item2 - fov; i < position.Item2 + fov; i++)
             {
-                for (var j = position.Item1 - FOV; i < position.Item1 + FOV; i++)
+                for (var j = position.Item1 - fov; i < position.Item1 + fov; i++)
                 {
-                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > FOV * FOV)
+                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > fov * fov)
                     {
                         continue;
                     }
 
                     if (map.GetFood((i, j)) == null)
+                    {
+                        continue;
+                    }
+                    
+                    if ((i, j) == position)
                     {
                         continue;
                     }
@@ -166,20 +195,25 @@ namespace CringeForestLibrary
             return food;
         }
 
-        protected (int, int) FindBestAnimal(int type, (int, int) position, in Map map, int FOV)
+        protected (int, int) FindBestAnimal(int type, (int, int) position, in Map map, int fov)
         {
             var maxSaturation = 0;
             Animal animal = null;
-            for (var i = position.Item2 - FOV; i < position.Item2 + FOV; i++)
+            for (var i = position.Item2 - fov; i < position.Item2 + fov; i++)
             {
-                for (var j = position.Item1 - FOV; i < position.Item1 + FOV; i++)
+                for (var j = position.Item1 - fov; i < position.Item1 + fov; i++)
                 {
-                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > FOV * FOV)
+                    if (Math.Pow(position.Item2 - i, 2) + Math.Pow(position.Item1 - j, 2) > fov * fov)
                     {
                         continue;
                     }
 
                     if (!map.EnumerateAnimals().ContainsKey((i, j)))
+                    {
+                        continue;
+                    }
+                    
+                    if ((i, j) == position)
                     {
                         continue;
                     }
@@ -199,34 +233,38 @@ namespace CringeForestLibrary
     
     internal class PredatoryBrain : Brain
     {
-        public override (int, int) HandlePredators(int type, (int, int) position, in Map map, int FOV)
+        public override (int, int) HandlePredators(int type, (int, int) position, in Map map, int fov)
         {
-            var pos = FindStrongestPredator(type, position, in map, FOV);
+            var pos = FindStrongestPredator(type, position, in map, fov);
+            if (pos == (-1, -1))
+            {
+                return pos;
+            }
             var myStrength = Metadata.AnimalSpecifications[type].FoodIntake;
             var hisStrength = Metadata.AnimalSpecifications[map.EnumerateAnimals()[pos].Type].FoodIntake;
             return myStrength < hisStrength ? (2 * position.Item1 - pos.Item1, 2 * position.Item2 - pos.Item2) : pos;
         }
 
-        public override (int, int) LookForFood(int type, (int, int) position, in Map map, int FOV)
+        public override (int, int) LookForFood(int type, (int, int) position, in Map map, int fov)
         {
-            return FindBestFood(type, position, in map, FOV);
+            return FindBestFood(type, position, in map, fov);
         }
     }
 
     internal class NotPredatoryBrain : Brain
     {
-        public override (int, int) HandlePredators(int type, (int, int) position, in Map map, int FOV)
+        public override (int, int) HandlePredators(int type, (int, int) position, in Map map, int fov)
         {
-            var pos = FindStrongestPredator(type, position, in map, FOV);
-            return (2 * position.Item1 - pos.Item1, 2 * position.Item2 - pos.Item2);
+            var pos = FindStrongestPredator(type, position, in map, fov);
+            return pos == (-1, -1) ? pos : (2 * position.Item1 - pos.Item1, 2 * position.Item2 - pos.Item2);
         }
 
-        public override (int, int) LookForFood(int type, (int, int) position, in Map map, int FOV)
+        public override (int, int) LookForFood(int type, (int, int) position, in Map map, int fov)
         {
-            var pos = FindBestAnimal(type, position, map, FOV);
+            var pos = FindBestAnimal(type, position, map, fov);
             if (pos == (-1, -1))
             {
-                pos = FindBestFood(type, position, map, FOV);
+                pos = FindBestFood(type, position, map, fov);
             }
 
             return pos;
@@ -241,7 +279,7 @@ namespace CringeForestLibrary
         public int Id { get; }
         public int Type { get; }
         public AnimalSex Sex { get; }
-        private int _saturation;
+        public int Saturation { get; set; }
         private int _foodIntake;
         private int _speed;
         private int _age;
@@ -276,7 +314,7 @@ namespace CringeForestLibrary
                 _brain = new NotPredatoryBrain();
             }
 
-            _saturation = spec.FoodIntake;
+            Saturation = spec.FoodIntake;
             _foodIntake = spec.FoodIntake;
             _speed = spec.Speed;
             _maxAge = spec.MaxAge;
@@ -287,26 +325,26 @@ namespace CringeForestLibrary
         {
             var typeSpec = Metadata.AnimalSpecifications[Type];
             if (!typeSpec.FoodTypes.Contains(food.Type)) return;
-            var canEat = typeSpec.FoodIntake - _saturation;
+            var canEat = typeSpec.FoodIntake - Saturation;
             if (canEat > food.Saturation)
             {
                 canEat = food.Saturation;
             }
 
             food.Saturation -= canEat;
-            _saturation += canEat;
+            Saturation += canEat;
         }
 
         private void Eat(Animal animal)
         {
             var typeSpec = Metadata.AnimalSpecifications[Type];
-            var canEat = typeSpec.FoodIntake - _saturation;
+            var canEat = typeSpec.FoodIntake - Saturation;
             if (canEat > animal._foodIntake)
             {
                 canEat = animal._foodIntake;
             }
 
-            _saturation += canEat;
+            Saturation += canEat;
         }
 
         private static void Fight(Animal a1, Animal a2, in Map map)
@@ -346,27 +384,60 @@ namespace CringeForestLibrary
             map.DeleteAnimal(loser.Position);
         }
 
-        public void Act(in Map map, in Dictionary<(int, int), Animal> animals)
+        private (int, int) FindEmptySpotNearCoords((int, int) coords)
         {
-            Trace.WriteLine("Animal " + Id + " " + Metadata.AnimalSpecifications[Type].Name + " acts");
+            var spot = coords;
+            var animals = _map.EnumerateAnimals();
+            
+            while (animals.ContainsKey(spot))
+            {
+                spot.Item1++;
+            }
+
+            return spot;
+        }
+
+        public void Act(in Map map, in ConcurrentDictionary<(int, int), Animal> animals)
+        {
+            const int HungerDecay = 1;
+            Trace.WriteLine("Animal " + Id + " " + Position 
+                            + " " + Metadata.AnimalSpecifications[Type].Name + " acts");
             // get new position
             var coords = _brain.Think(Type, _foodIntake, Position, map, DefaultFieldOfView);
 
+            Saturation -= HungerDecay;
+            if (Saturation <= 0)
+            {
+                map.DeleteAnimal(Position);
+                return;
+            }
+
             if (animals.ContainsKey(coords)) // Is there an animal?
             {
+                if (animals[coords].Type == Type)
+                {
+                    var newCoords = FindEmptySpotNearCoords(coords);
+                    map.AddAnimal(newCoords, new Animal(Type,
+                        new Random().Next(2) == 0 ? AnimalSex.Male : AnimalSex.Female, newCoords));
+                    newCoords = FindEmptySpotNearCoords(coords);
+                    Position = newCoords;
+                    map.MoveAnimal(Position, coords);
+                }
                 Fight(this, animals[coords], in map);
             }
             else
             {
                 var food = map.GetFood(coords);
-                if (food == null) return;
-                Eat(food);
-                map.UpdateFood(coords);
+                if (food != null)
+                {
+                    Eat(food);
+                    map.UpdateFood(coords);
+                }
             }
 
             Position = coords;
             map.MoveAnimal(Position, coords);
-            Trace.WriteLine("Animal " + Id + Metadata.AnimalSpecifications[Type].Name + "acted");
+            Trace.WriteLine("Animal " + Id + " " + Metadata.AnimalSpecifications[Type].Name + " acted");
         }
     }
 }
