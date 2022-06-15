@@ -1,5 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Map } from "./websocket";
 // import { Console } from 'console';
 
 @Component({
@@ -13,11 +14,14 @@ export class HomeComponent {
     @Inject('BASE_URL') private BaseUrl: string) {
     }
   private simulationInitialized = false;
+  private map = new Map();
   simulationRunning = false;
+
   private debugWrite(str) // debug
   {
     document.getElementsByClassName("simulation-view")[0].innerHTML += str + "<br />";
   }
+
   startSimulation()
   {
     this.debugWrite("start simulation"); // debug
@@ -25,6 +29,7 @@ export class HomeComponent {
     {
       this.http.post(this.BaseUrl + "api/posts", "InitializeSimulation", { responseType: "text" }).subscribe(resp => {
         this.debugWrite("POST response: " + resp);
+        this.debugWrite(this.map.initialize())
         if (resp == "Simulation initialized")
         {
           this.simulationInitialized = true;
@@ -43,6 +48,7 @@ export class HomeComponent {
       });
     }
   }
+
   stopSimulation()
   {
     this.debugWrite("stop simulation"); // debug
@@ -54,10 +60,12 @@ export class HomeComponent {
       }
     });
   }
+
   loadMap()
   {
     this.debugWrite("load map"); // debug
   }
+
   saveMap()
   {
     this.debugWrite("save map"); // debug
@@ -65,6 +73,7 @@ export class HomeComponent {
       this.debugWrite("POST response: " + resp);
     });
   }
+
   changeInitialParameters()
   {
     this.debugWrite("change initial parameters"); // debug

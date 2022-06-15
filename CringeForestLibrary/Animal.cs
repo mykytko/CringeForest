@@ -247,7 +247,13 @@ namespace CringeForestLibrary
 
         public override (int, int) LookForFood(int type, (int, int) position, in Map map, int fov)
         {
-            return FindBestFood(type, position, in map, fov);
+            var pos = FindBestAnimal(type, position, map, fov);
+            if (pos == (-1, -1))
+            {
+                pos = FindBestFood(type, position, map, fov);
+            }
+
+            return pos;
         }
     }
 
@@ -261,13 +267,7 @@ namespace CringeForestLibrary
 
         public override (int, int) LookForFood(int type, (int, int) position, in Map map, int fov)
         {
-            var pos = FindBestAnimal(type, position, map, fov);
-            if (pos == (-1, -1))
-            {
-                pos = FindBestFood(type, position, map, fov);
-            }
-
-            return pos;
+            return FindBestFood(type, position, in map, fov);
         }
     }
 

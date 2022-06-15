@@ -9,25 +9,24 @@
 .simulation-view {
     grid-column: 1;
     grid-row: 1 / 4;
-    background-color: red;
+    background-color: #5699d4;
 }
 
 .statistics-view {
     grid-column: 2;
     grid-row: 1 / 3;
-    background-color: green;
+    background-color: #198cd8;
 }
 
 .menu {
     grid-column: 2;
     grid-row: 3;
-    background-color: blue;
+    background-color: #0073d2;
     display: flex;
     justify-content: center;
 }
 
 button {
-    margin: 2%;
-    margin-top: 10%;
-    height: 20%;
+  margin: 10% 2% 2%;
+  height: 25%;
 }

@@ -1,19 +1,26 @@
+using System.ComponentModel;
+using System.Net.WebSockets;
 using CringeForestLibrary;
 
-namespace WebInterface
+namespace AngularWebInterface
 {
     public class MapViewer : IMapViewer
     {
-        private readonly MapHub _mapHub;
+        private readonly WebSocketManager _webSocketManager;
         
-        public MapViewer(MapHub mapHub)
+        public MapViewer(WebSocketManager webSocketManager)
         {
-            _mapHub = mapHub;
+            _webSocketManager = webSocketManager;
         }
 
-        public async void SetBackgroundView(Map map)
+        public void Initialize(WebSocket webSocket)
         {
-            await _mapHub.SendBackgroundData(map);
+            _webSocketManager.Initialize(webSocket);
+        }
+        
+        public void SetBackgroundView(int height, int width, Map.Pixel[,] matrix)
+        {
+            _webSocketManager.SendBackgroundData(height, width, matrix);
         }
         
         public void AddAnimalView((int, int) coords, Animal animal)

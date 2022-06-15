@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebInterface.Controllers
+namespace AngularWebInterface.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -43,7 +43,8 @@ namespace WebInterface.Controllers
             switch (command)
             {
                 case "InitializeSimulation":
-                    Task.Run(Program.CringeForest.InitializeSimulation);
+                    Task.Run(async () => Program.CringeForest.InitializeSimulation(
+                        await HttpContext.WebSockets.AcceptWebSocketAsync()));
                     return "Simulation initialized";
                 case "ResumeSimulation":
                     Program.CringeForest.ResumeSimulation();

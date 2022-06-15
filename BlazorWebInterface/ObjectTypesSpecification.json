@@ -1,0 +1,143 @@
+{
+  "FoodSpecifications": [
+    {
+      "Name": "Grass",
+      "Saturation": 5,
+      "GrowthRate": 0.2
+    },
+    {
+      "Name": "Mushroom",
+      "Saturation": 7,
+      "GrowthRate": 0.1
+    }, 
+    {
+      "Name": "BerryBush",
+      "Saturation": 20,
+      "GrowthRate": 0.05
+    },
+    {
+      "Name": "EmptyTree",
+      "Saturation": 5,
+      "GrowthRate": 0.15
+    },
+    {
+      "Name": "NutTree",
+      "Saturation": 40,
+      "GrowthRate": 0.01
+    }
+  ],
+  
+  "AnimalSpecifications": [
+    {
+      "Name": "Giraffe",
+      "FoodTypes": [
+        "Grass",
+        "EmptyTree"
+      ],
+      "IsPredatory": false,
+      "FoodIntake": 35,
+      "Speed": 3,
+      "MaxAge": 25
+    },
+    {
+      "Name": "Cow",
+      "FoodTypes": [
+        "Grass"
+      ],
+      "IsPredatory": false,
+      "FoodIntake": 25,
+      "Speed": 3,
+      "MaxAge": 20
+    },
+    {
+      "Name": "Hedgehog",
+      "FoodTypes": [
+        "BerryBush",
+        "Mushroom"
+      ],
+      "IsPredatory": true,
+      "FoodIntake": 2,
+      "Speed": 2,
+      "MaxAge": 3
+    },
+    {
+      "Name": "Squirrel",
+      "FoodTypes": [
+        "NutTree",
+        "Mushroom",
+        "BerryBush"
+      ],
+      "IsPredatory": false,
+      "FoodIntake": 35,
+      "Speed": 3,
+      "MaxAge": 25
+    },
+    {
+      "Name": "Fox",
+      "FoodTypes": [
+        "BerryBush"
+      ],
+      "IsPredatory": true,
+      "FoodIntake": 15,
+      "Speed": 4,
+      "MaxAge": 5
+    },
+    {
+      "Name": "Wolf",
+      "FoodTypes": [],
+      "IsPredatory": true,
+      "FoodIntake": 30,
+      "Speed": 4,
+      "MaxAge": 5
+    }
+  ],
+
+  "BiomeSpecifications": [
+    {
+      "Name": "Water",
+      "LowerBound":  0,
+      "UpperBound": 0.2,
+      "AnimalShares": {},
+      "FoodShares": {}
+    },
+    {
+      "Name": "Beach",
+      "LowerBound": 0.2,
+      "UpperBound": 0.4,
+      "AnimalShares": {},
+      "FoodShares": {}
+    },
+    {
+      "Name": "Plains",
+      "LowerBound": 0.4,
+      "UpperBound": 0.65,
+      "AnimalShares": {
+        "Giraffe": 50,
+        "Cow": 50
+      },
+      "FoodShares": {
+        "Grass": 94,
+        "BerryBush": 1,
+        "EmptyTree": 5
+      }
+    },
+    {
+      "Name": "Forest",
+      "LowerBound": 0.65,
+      "UpperBound": 1,
+      "AnimalShares": {
+        "Giraffe": 15,
+        "Hedgehog": 20,
+        "Squirrel": 50,
+        "Fox": 5,
+        "Wolf": 10
+      },
+      "FoodShares": {
+        "Mushroom": 8,
+        "BerryBush": 2,
+        "EmptyTree": 85,
+        "NutTree": 5
+      }
+    }
+  ]
+}

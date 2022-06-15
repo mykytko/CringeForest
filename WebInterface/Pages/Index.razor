@@ -1,0 +1,85 @@
+@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using CringeForestLibrary
+@implements IAsyncDisposable
+
+<div class="wrapper">
+    <div class="simulation-view">
+        <p>Simulation view</p>
+        <div class="simulation">
+
+        </div>
+    </div>
+
+    <div class="statistics-view">
+        <p>Statistics view</p>
+        <div class="statistics">
+            
+        </div>
+    </div>
+
+    <div class="menu">
+        <p>Menu</p>
+        <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="StartSimulation">Start simulation</button>
+        <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="LoadMap">Load map</button>
+        <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="SaveMap">Save map</button>
+        <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="ChangeInitialParameters">Change initial parameters</button>
+        <button class="btn btn-primary" disabled="@(!_simulationRunning)" @onclick="StopSimulation">Stop simulation</button>
+    </div>
+</div>
+
+@code
+{
+    private HubConnection? hubConnection;
+    private bool _simulationRunning = false;
+    private Map _map;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("127.0.0.1").Build();
+
+        hubConnection.On<Map>("ReceiveBackground", receivedMap =>
+        {
+            _map = receivedMap;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+    
+    private void StartSimulation()
+    {
+        StaticValues.CringeForest.InitializeSimulation();
+        _simulationRunning = true;
+    }
+
+    private static void LoadMap()
+    {
+        StaticValues.CringeForest.LoadMap("CHANGE PATH"); // TODO: CHANGE PATH
+    }
+
+    private static void SaveMap()
+    {
+        StaticValues.CringeForest.SaveMap();
+    }
+
+    private static void ChangeInitialParameters()
+    {
+        StaticValues.CringeForest.LoadParameters("CHANGE PATH"); // TODO: CHANGE PATH
+    }
+
+    private void StopSimulation()
+    {
+        StaticValues.CringeForest.StopSimulation();
+        _simulationRunning = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

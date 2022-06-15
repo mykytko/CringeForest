@@ -1,0 +1,36 @@
+@using Blazor.Extensions
+@using Blazor.Extensions.Canvas.Canvas2D
+@using CringeForestLibrary
+@using Microsoft.AspNetCore.SignalR.Client
+@inject HubConnection HubConnection
+<BECanvas Width="@_width" Height="@_height" @ref="_canvasReference" ></BECanvas>
+
+@code {
+    private Canvas2DContext _context = null!;
+    private BECanvasComponent _canvasReference = null!;
+    private Map _map = null!;
+    private int _width, _height;
+
+    protected override void OnInitialized()
+    {
+        HubConnection.On<Map>("ReceiveMap", receivedMap =>
+        {
+            _map = receivedMap;
+            _width = _map.Width;
+            _height = _map.Height;
+            InvokeAsync(StateHasChanged);
+            FirstRender();
+        });
+    }
+
+    private async void FirstRender()
+    {
+        _context = await _canvasReference.CreateCanvas2DAsync();
+        await _context.SetFillStyleAsync("green");
+
+        await _context.FillRectAsync(10, 100, 100, 100);
+
+        await _context.SetFontAsync("48px serif");
+        await _context.StrokeTextAsync("Simulation", 10, 100);
+    }
+}

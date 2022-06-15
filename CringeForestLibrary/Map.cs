@@ -20,9 +20,9 @@ namespace CringeForestLibrary
             public int BiomeId { get; }
         }
 
-        private readonly Pixel[,] _matrix;
-        private readonly Dictionary<(int, int), FoodSupplier> _food;
-        private readonly ConcurrentDictionary<(int, int), Animal> _animals;
+        public Pixel[,] Matrix { get; }
+        public Dictionary<(int, int), FoodSupplier> Food { get; }
+        public ConcurrentDictionary<(int, int), Animal> Animals { get; }
 
         public Map(IMapViewer mapViewer, int height, int width, Pixel[,] matrix, 
             Dictionary<(int, int), FoodSupplier> food, ConcurrentDictionary<(int, int), Animal> animals)
@@ -30,9 +30,9 @@ namespace CringeForestLibrary
             Trace.WriteLine("Preparing the map...");
             Height = height;
             Width = width;
-            _matrix = matrix;
-            _food = food;
-            _animals = animals;
+            Matrix = matrix;
+            Food = food;
+            Animals = animals;
             foreach (var animal in animals)
             {
                 Trace.WriteLine(animal.Value.Sex + " " + Metadata.AnimalSpecifications[animal.Value.Type].Name);
@@ -42,18 +42,18 @@ namespace CringeForestLibrary
         }
         public int GetPixelBiome((int, int) coords)
         {
-            return _matrix[coords.Item1, coords.Item2].BiomeId;
+            return Matrix[coords.Item1, coords.Item2].BiomeId;
         }
 
         public void AddAnimal((int, int) coords, Animal animal)
         {
-            _animals.TryAdd(coords, animal);
+            Animals.TryAdd(coords, animal);
             _mapViewer.AddAnimalView(coords, animal);
         }
 
         public void DeleteAnimal((int, int) coords)
         {
-            _animals.TryRemove(coords, out _);
+            Animals.TryRemove(coords, out _);
             _mapViewer.DeleteAnimalView(coords);
         }
 
@@ -64,23 +64,23 @@ namespace CringeForestLibrary
 
         public void AddFood((int, int) coords, FoodSupplier food)
         {
-            _food.Add(coords, food);
+            Food.Add(coords, food);
             _mapViewer.AddFoodView(coords, food);
         }
 
         public void UpdateFood((int, int) coords)
         {
-            _mapViewer.SetFoodView(coords, _food[coords].Saturation);
+            _mapViewer.SetFoodView(coords, Food[coords].Saturation);
         }
 
         public FoodSupplier GetFood((int, int) coords)
         {
-            return !_food.ContainsKey(coords) ? null : _food[coords];
+            return !Food.ContainsKey(coords) ? null : Food[coords];
         }
 
         public ConcurrentDictionary<(int, int), Animal> EnumerateAnimals()
         {
-            return _animals;
+            return Animals;
         }
     }
 }

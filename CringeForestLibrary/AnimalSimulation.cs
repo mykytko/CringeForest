@@ -22,10 +22,6 @@ namespace CringeForestLibrary
             foreach (var animal in animals)
             {
                 animal.Value.Act(in _map, in animals);
-                if (animal.Value.Saturation <= 0)
-                {
-                    _map.DeleteAnimal(animal.Value.Position);
-                }
                 if (!dict.ContainsKey(animal.Value.Type))
                 {
                     dict.Add(animal.Value.Type, 1);

@@ -4,16 +4,9 @@ namespace WebInterface
 {
     public class MapViewer : IMapViewer
     {
-        private readonly MapHub _mapHub;
-        
-        public MapViewer(MapHub mapHub)
-        {
-            _mapHub = mapHub;
-        }
-
         public async void SetBackgroundView(Map map)
         {
-            await _mapHub.SendBackgroundData(map);
+            
         }
         
         public void AddAnimalView((int, int) coords, Animal animal)
