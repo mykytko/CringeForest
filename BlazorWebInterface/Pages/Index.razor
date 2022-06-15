@@ -1,0 +1,68 @@
+@page "/"
+@using CringeForestLibrary
+@using WebInterface
+@inject CringeForest CringeForest
+
+<PageTitle>CringeForest</PageTitle>
+
+<div class="wrapper">
+  <div class="simulation-view">
+    <p>Simulation view</p>
+    <div class="simulation">
+      <Simulation />
+    </div>
+  </div>
+
+  <div class="statistics-view">
+    <p>Statistics view</p>
+    <div class="statistics">
+      <Statistics />
+    </div>
+  </div>
+
+  <div class="menu">
+    <p>Menu</p>
+    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="StartSimulation">Start simulation</button>
+    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="LoadMap">Load map</button>
+    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="SaveMap">Save map</button>
+    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="ChangeInitialParameters">Change initial parameters</button>
+    <button class="btn btn-primary" disabled="@(!_simulationRunning)" @onclick="StopSimulation">Stop simulation</button>
+  </div>
+</div>
+
+@code 
+{
+
+  private bool _simulationRunning;
+
+  protected override void OnInitialized()
+  {
+    
+    CringeForest.Initialize(new MapViewer());
+  }
+
+  private void StartSimulation()
+  {
+    CringeForest.InitializeSimulation();
+    _simulationRunning = true;
+  }
+  
+  private void LoadMap()
+  {
+  }
+
+  private void SaveMap()
+  {
+    CringeForest.SaveMap();
+  }
+  
+  private void ChangeInitialParameters()
+  {
+  }
+  
+  private void StopSimulation()
+  {
+    _simulationRunning = false;
+  }
+  
+}
