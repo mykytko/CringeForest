@@ -42,5 +42,13 @@
       "green": 95,
       "blue": 15
     }
+  ],
+  "animalPictures": [
+    "animals/giraffe16.png",
+    "animals/cow16.png",
+    "animals/hedgehog16.png",
+    "animals/squirrel16.png",
+    "animals/fox16.png",
+    "animals/wolf16.png"
   ]
 }

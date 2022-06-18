@@ -17,19 +17,23 @@ namespace WebInterface
                 JsonSerializer.Serialize(new SerializableMap(map)));
         }
         
-        public void AddAnimalView((int, int) coords, Animal animal)
+        public async void AddAnimalView((int, int) coords, Animal animal)
         {
-            
+            await HubContext.Clients.All.SendAsync("ReceiveAdd",
+                JsonSerializer.Serialize(new KeyValuePair<int, CoordsAndType>(animal.Id, 
+                    new CoordsAndType(animal.X, animal.Y, animal.Type))));
         }
 
-        public void DeleteAnimalView((int, int) coords)
+        public async void DeleteAnimalView(int id)
         {
-            
+            await HubContext.Clients.All.SendAsync("ReceiveDelete",
+                JsonSerializer.Serialize(id));
         }
 
-        public void MoveAnimalView((int, int) coords1, (int, int) coords2)
+        public async void MoveAnimalView(int id, (int, int) coords)
         {
-            
+            await HubContext.Clients.All.SendAsync("ReceiveMove",
+                JsonSerializer.Serialize(new KeyValuePair<int, Coords>(id, new Coords(coords))));
         }
 
         public void AddFoodView((int, int) coords, FoodSupplier food)

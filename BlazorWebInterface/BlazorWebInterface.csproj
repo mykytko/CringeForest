@@ -16,4 +16,13 @@
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="6.0.6" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Include="wwwroot\animals\cow16.png" />
+      <None Include="wwwroot\animals\fox16.png" />
+      <None Include="wwwroot\animals\giraffe16.png" />
+      <None Include="wwwroot\animals\hedgehog16.png" />
+      <None Include="wwwroot\animals\squirrel16.png" />
+      <None Include="wwwroot\animals\wolf16.png" />
+    </ItemGroup>
+
 </Project>

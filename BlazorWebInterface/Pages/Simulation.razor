@@ -40,6 +40,7 @@
         _hubConnection.On<string>("ReceiveMap", receivedMap =>
         {
             _map = JsonSerializer.Deserialize<SerializableMap>(receivedMap);
+            Debug.Assert(_map != null, nameof(_map) + " != null");
             _width = _map.Width;
             _height = _map.Height;
             InvokeAsync(StateHasChanged);
@@ -49,10 +50,33 @@
         _hubConnection.On<string>("ReceiveFoodRatio",  receivedStruct =>
         {
             var coordsAndRatio = JsonSerializer.Deserialize<CoordsAndRatio>(receivedStruct);
+            Debug.Assert(coordsAndRatio != null, nameof(coordsAndRatio) + " != null");
             var x = coordsAndRatio.Y * _width + coordsAndRatio.X;
             var ratio = coordsAndRatio.Ratio;
             InvokeAsync(StateHasChanged);
             JsRuntime.InvokeVoidAsync("updateFoodRatio", x, ratio);
+        });
+        
+        _hubConnection.On<string>("ReceiveAdd",  receivedStruct =>
+        {
+            var (id, animal) = JsonSerializer
+                .Deserialize<KeyValuePair<int, CoordsAndType>>(receivedStruct);
+            InvokeAsync(StateHasChanged);
+            JsRuntime.InvokeVoidAsync("addAnimal", id, animal.X, animal.Y, animal.AnimalType);
+        });
+        
+        _hubConnection.On<string>("ReceiveDelete",  receivedStruct =>
+        {
+            var id = JsonSerializer.Deserialize<int>(receivedStruct);
+            InvokeAsync(StateHasChanged);
+            JsRuntime.InvokeVoidAsync("removeAnimal", id);
+        });
+        
+        _hubConnection.On<string>("ReceiveMove",  receivedStruct =>
+        {
+            var (id, coords) = JsonSerializer.Deserialize<KeyValuePair<int, Coords>>(receivedStruct);
+            InvokeAsync(StateHasChanged);
+            JsRuntime.InvokeVoidAsync("moveAnimal", id, coords.X, coords.Y);
         });
 
         await _hubConnection.StartAsync();
@@ -61,6 +85,7 @@
     private async void FirstRender()
     {
         var mapData = new int[_width * _height];
+        Debug.Assert(_map != null, nameof(_map) + " != null");
         for (var i = 0; i < _map.Height; i++)
         {
             for (var j = 0; j < _map.Width; j++)
@@ -71,6 +96,6 @@
 
         var graphics = await File.ReadAllTextAsync("GraphicsSpecification.json");
         await JsRuntime.InvokeVoidAsync("firstRender", _height, _width, mapData,
-            JsonSerializer.Serialize(_map.FoodSuppliers), graphics);
+            JsonSerializer.Serialize(_map.FoodSuppliers), JsonSerializer.Serialize(_map.Animals), graphics);
     }
 }

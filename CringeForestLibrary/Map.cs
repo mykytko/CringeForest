@@ -55,8 +55,8 @@ namespace CringeForestLibrary
 
         public void DeleteAnimalByPos((int, int) coords)
         {
-            AnimalIdByPos.TryRemove(coords, out _);
-            _mapViewer.DeleteAnimalView(coords);
+            AnimalIdByPos.TryRemove(coords, out var id);
+            _mapViewer.DeleteAnimalView(id);
         }
 
         public void ClearAnimals()
@@ -74,7 +74,7 @@ namespace CringeForestLibrary
             AnimalIdByPos.TryAdd(coords2, id);
             (AnimalsById[id].X, AnimalsById[id].Y) = coords2;
             
-            _mapViewer.MoveAnimalView(coords1, coords2);
+            _mapViewer.MoveAnimalView(id, coords2);
         }
 
         public void UpdateFood((int, int) coords)

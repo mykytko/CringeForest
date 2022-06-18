@@ -30,39 +30,71 @@
 <script src="_framework/blazor.server.js"></script>
 <script>
 let foodDict = [];
-let canvas, ctx, imageData, scale, translatePos;
+let animals = [];
+let animalImg = [];
+let fgCanvas, canvas, imageData, scale, translatePos;
+let update = true;
 
 function draw() {
-    ctx.clearRect(0, 0, translatePos.x,  canvas.height);
-    ctx.clearRect(0, 0, canvas.width, translatePos.y);
-    ctx.clearRect(translatePos.x + imageData.width * scale, 0, canvas.width, canvas.height);
-    ctx.clearRect(0, translatePos.y + imageData.height * scale, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(translatePos.x, translatePos.y);
-    ctx.scale(scale, scale);
-    createImageBitmap(imageData).then(bitmap => {
-        ctx.drawImage(bitmap, translatePos.x, translatePos.y, imageData.height * scale, imageData.width * scale);
-        // draw plants
+    if (update) {
+        update = false;
+        fgCanvas.ctx.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+        fgCanvas.ctx.drawImage(canvas, 0, 0);
+        
+        canvas.ctx.save();
+        canvas.ctx.translate(translatePos.x, translatePos.y);
+        canvas.ctx.scale(scale, scale);
+        createImageBitmap(imageData).then(bm => {
+            canvas.ctx.drawImage(bm, translatePos.x, translatePos.y, imageData.height * scale, imageData.width * scale);
+        });
+        
+        
         // draw animals
-    });
-    ctx.restore();
+        Object.values(animals).forEach(animal => {
+            fgCanvas.ctx.drawImage(animalImg[animal.AnimalType], 
+                animal.X * scale + translatePos.x, animal.Y * scale + translatePos.y, scale, scale);
+        });
+        canvas.ctx.restore();
+    }
+    requestAnimationFrame(draw);
+}
+
+window.addAnimal = (id, x, y, type) => {
+    animals[id] = { X: x,  Y: y, AnimalType: type };
+    update = true;
+}
+
+window.removeAnimal = (id) => {
+    delete animals[id];
+    update = true;
+}
+
+window.moveAnimal = (id, x, y) => {
+    animals[id].X = x;
+    animals[id].Y = y;
+    update = true;
 }
 
 window.updateFoodRatio = (x, ratio) => {
-    console.log(x + ' ratio ' + foodDict[x].ratio + ' -> ' + ratio);
     foodDict[x].ratio = ratio;
     imageData.data[x * 4] = (1 - ratio) * foodDict[x].biomePixel.red + ratio * foodDict[x].foodPixel.red;
     imageData.data[x * 4 + 1] = (1 - ratio) * foodDict[x].biomePixel.green + ratio * foodDict[x].foodPixel.green;
     imageData.data[x * 4 + 2] = (1 - ratio) * foodDict[x].biomePixel.blue + ratio * foodDict[x].foodPixel.blue;
-    draw();
+    update = true;
 }
 
-window.firstRender = (height, width, mapData, foodJson, graphicsJson) => {
-    canvas = document.getElementById('simulation');
+window.firstRender = (height, width, mapData, foodJson, animalsJson, graphicsJson) => {
+    canvas = document.createElement('canvas');
     canvas.width = window.innerWidth / 2 - 60;
     canvas.height = window.innerHeight - 60;
-    ctx = canvas.getContext('2d');
-    imageData = ctx.createImageData(width, height);
+    canvas.ctx = canvas.getContext('2d');
+    
+    fgCanvas = document.getElementById('simulation');
+    fgCanvas.width = window.innerWidth / 2 - 60;
+    fgCanvas.height = window.innerHeight - 60;
+    fgCanvas.ctx = fgCanvas.getContext('2d');
+    
+    imageData = canvas.ctx.createImageData(width, height);
     let graphics = JSON.parse(graphicsJson);
     for (let i = 0; i < height; i++) {
         for (let j = 0; j < width; j++) {
@@ -101,23 +133,33 @@ window.firstRender = (height, width, mapData, foodJson, graphicsJson) => {
         imageData.data[key * 4 + 2] = b;
     });
     
-    // fill foods
     // fill animals
+    animals = JSON.parse(animalsJson);
+    
+    // fill animals imageData
+    animalImg = [];
+    Object.values(graphics.animalPictures).forEach(path => {
+        let image = new Image();
+        image.src = path;
+        image.onload = () => update = true;
+        animalImg.push(image);
+    });
     
     translatePos = {
         x: 0,
         y: 0
     }
     
-    let minScaleW = canvas.width / width;
-    let minScaleH = canvas.height / height;
+    let minScaleW = fgCanvas.width / width;
+    let minScaleH = fgCanvas.height / height;
     let minScale = minScaleW < minScaleH ? minScaleW : minScaleH;
+    if (minScale < 16) {
+        minScale = 16;
+    }
     scale = minScale;
     let scaleMultiplier = 0.95;
-    let startDragOffset = {};
-    let mouseDown = false;
         
-    draw(scale, translatePos);
+    requestAnimationFrame(draw);
     
     function validateTranslatePos(translatePos, scale, minScale, imageData, canvas) {
         if (scale >= minScale) {
@@ -139,7 +181,7 @@ window.firstRender = (height, width, mapData, foodJson, graphicsJson) => {
         return translatePos;
     }
     
-    canvas.addEventListener('wheel', function (event) {
+    fgCanvas.addEventListener('wheel', function (event) {
         if (event.deltaY < 0) {
             scale /= scaleMultiplier;
         } else if (event.deltaY > 0) {
@@ -149,35 +191,25 @@ window.firstRender = (height, width, mapData, foodJson, graphicsJson) => {
             scale = minScale;
         }
         translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
-        draw(canvas, ctx, imageData, scale, translatePos);
+        update = true;
     });
-
-    canvas.addEventListener('mousedown', function (event) {
-        mouseDown = true;
-        startDragOffset.x = event.clientX - translatePos.x;
-        startDragOffset.y = event.clientY - translatePos.y;
-    });
-
-    canvas.addEventListener('mouseup', function (event) {
-        mouseDown = false;
-    });
-
-    canvas.addEventListener('mouseover', function (event) {
-        mouseDown = false;
-    });
-
-    canvas.addEventListener('mouseout', function (event) {
-        mouseDown = false;
-    });
-
-    canvas.addEventListener('mousemove', function (event) {
-        if (mouseDown) {
-            translatePos.x = event.clientX - startDragOffset.x;
-            translatePos.y = event.clientY - startDragOffset.y;
+    
+    const mouse  = {x : 0, y : 0, oldX : 0, oldY : 0, button : false}
+    function mouseEvents(e){
+        mouse.oldX = mouse.x;
+        mouse.oldY = mouse.y;
+        mouse.x = e.pageX;
+        mouse.y = e.pageY;
+        mouse.button = e.type === "mousedown" ? true : e.type === "mouseup" ? false : mouse.button;
+        if (mouse.button) {
+            translatePos.x += mouse.x - mouse.oldX;
+            translatePos.y += mouse.y - mouse.oldY;
             translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
-            draw(canvas, ctx, imageData, scale, translatePos);
+            update = true;
         }
-    });
+    }
+    ["down","up","move"].forEach(name => document.addEventListener("mouse" + name, mouseEvents));
+
 };
 </script>
 </body>

@@ -3,17 +3,33 @@ using System.Text.Json.Serialization;
 
 namespace CringeForestLibrary;
 
+public class CoordsAndType
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+    public int AnimalType { get; set; }
+        
+    [JsonConstructor]
+    public CoordsAndType(int x, int y, int animalType)
+    {
+        X = x;
+        Y = y;
+        AnimalType = animalType;
+    }
+}
+
 public class SerializableMap
 {
     public int[][] Matrix { get; set; }
     public int Height { get; set; }
     public int Width { get; set; }
     public Dictionary<int, FoodSupplier> FoodSuppliers { get; set; } // encoded coordinate is i * height + j
-    public Dictionary<int, Animal> Animals { get; set; }
+    public Dictionary<int, CoordsAndType> Animals { get; set; }
+
 
     [JsonConstructor]
     public SerializableMap(int[][] matrix, int height, int width,
-        Dictionary<int, FoodSupplier> foodSuppliers, Dictionary<int, Animal> animals)
+        Dictionary<int, FoodSupplier> foodSuppliers, Dictionary<int, CoordsAndType> animals)
     {
         Matrix = matrix;
         Height = height;
@@ -42,10 +58,10 @@ public class SerializableMap
             FoodSuppliers.Add(foodSupplier.Key.Item2 * Width + foodSupplier.Key.Item1, foodSupplier.Value);
         }
 
-        Animals = new Dictionary<int, Animal>();
-        foreach (var animal in map.AnimalsById)
+        Animals = new Dictionary<int, CoordsAndType>();
+        foreach (var animal in map.AnimalsById.Values)
         {
-            Animals.Add(animal.Value.Y * Width + animal.Value.X, animal.Value);
+            Animals.Add(animal.Id, new CoordsAndType(animal.X, animal.Y, animal.Type));
         }
     }
 }
