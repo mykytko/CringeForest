@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -17,11 +16,11 @@ namespace CringeForestLibrary
 
         public void SimulateTick()
         {
-            var animals = _map.EnumerateAnimals();
+            var animals = _map.AnimalsById;
             var dict = new Dictionary<int, int>();
             foreach (var animal in animals)
             {
-                animal.Value.Act(in _map, in animals);
+                animal.Value.Act(in _map);
                 if (!dict.ContainsKey(animal.Value.Type))
                 {
                     dict.Add(animal.Value.Type, 1);
@@ -31,7 +30,8 @@ namespace CringeForestLibrary
                     dict[animal.Value.Type] += 1;
                 }
             }
-
+            _map.ClearAnimals();
+            
             Trace.WriteLine("The populations are:");
             foreach (var type in dict.Keys)
             {

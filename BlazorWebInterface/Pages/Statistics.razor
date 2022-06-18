@@ -1,17 +1,12 @@
 @using Blazor.Extensions
 @using Blazor.Extensions.Canvas.Canvas2D
 @using CringeForestLibrary
-<BECanvas Width="@width" Height="@height" @ref="_canvasReference" ></BECanvas>
+<BECanvas Width="640" Height="640" @ref="_canvasReference" ></BECanvas>
 
 @code {
     private Canvas2DContext _context = null!;
     private BECanvasComponent _canvasReference = null!;
     private int width, height;
-
-    protected override async void OnInitialized()
-    {
-        // set height and width, get the map
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

@@ -1,36 +1,76 @@
 @using Blazor.Extensions
 @using Blazor.Extensions.Canvas.Canvas2D
+@using Blazor.Extensions.Canvas.WebGL
 @using CringeForestLibrary
 @using Microsoft.AspNetCore.SignalR.Client
-@inject HubConnection HubConnection
-<BECanvas Width="@_width" Height="@_height" @ref="_canvasReference" ></BECanvas>
+@using WebInterface
+@using JsonSerializer = System.Text.Json.JsonSerializer
+@using System.Diagnostics
+@using WebInterface.Serializable
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+<canvas id="simulation" width="800" height="800"></canvas>
 
 @code {
-    private Canvas2DContext _context = null!;
-    private BECanvasComponent _canvasReference = null!;
-    private Map _map = null!;
+    private HubConnection? _hubConnection;
+    private SerializableMap? _map;
     private int _width, _height;
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        HubConnection.On<Map>("ReceiveMap", receivedMap =>
+        if (!firstRender)
         {
-            _map = receivedMap;
+            return;
+        }
+        
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl("wss://127.0.0.1:7025/simulation", options =>
+            {
+                options.WebSocketConfiguration = conf =>
+                {
+                    conf.RemoteCertificateValidationCallback =
+                        (_, _, _, _) => true;
+                };
+                options.HttpMessageHandlerFactory = _ => new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                };
+            }).AddMessagePackProtocol().Build();
+
+        _hubConnection.On<string>("ReceiveMap", receivedMap =>
+        {
+            _map = JsonSerializer.Deserialize<SerializableMap>(receivedMap);
             _width = _map.Width;
             _height = _map.Height;
             InvokeAsync(StateHasChanged);
             FirstRender();
         });
+        
+        _hubConnection.On<string>("ReceiveFoodRatio",  receivedStruct =>
+        {
+            var coordsAndRatio = JsonSerializer.Deserialize<CoordsAndRatio>(receivedStruct);
+            var x = coordsAndRatio.Y * _width + coordsAndRatio.X;
+            var ratio = coordsAndRatio.Ratio;
+            InvokeAsync(StateHasChanged);
+            JsRuntime.InvokeVoidAsync("updateFoodRatio", x, ratio);
+        });
+
+        await _hubConnection.StartAsync();
     }
 
     private async void FirstRender()
     {
-        _context = await _canvasReference.CreateCanvas2DAsync();
-        await _context.SetFillStyleAsync("green");
+        var mapData = new int[_width * _height];
+        for (var i = 0; i < _map.Height; i++)
+        {
+            for (var j = 0; j < _map.Width; j++)
+            {
+                mapData[i * _width + j] = _map.Matrix[i][j];
+            }
+        }
 
-        await _context.FillRectAsync(10, 100, 100, 100);
-
-        await _context.SetFontAsync("48px serif");
-        await _context.StrokeTextAsync("Simulation", 10, 100);
+        var graphics = await File.ReadAllTextAsync("GraphicsSpecification.json");
+        await JsRuntime.InvokeVoidAsync("firstRender", _height, _width, mapData,
+            JsonSerializer.Serialize(_map.FoodSuppliers), graphics);
     }
 }

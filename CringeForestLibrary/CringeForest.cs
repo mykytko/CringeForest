@@ -11,9 +11,8 @@ namespace CringeForestLibrary
         public void AddAnimalView((int, int) coords, Animal animal);
         public void DeleteAnimalView((int, int) coords);
         public void MoveAnimalView((int, int) coords1, (int, int) coords2);
-        public void AddFoodView((int, int) coords, FoodSupplier food);
-        public void SetFoodView((int, int) coords, int saturation);
-        void SetBackgroundView(Map map);
+        public void SetFoodView((int, int) coords, double ratio);
+        void SetInitialView(Map map);
     }
     
     public class CringeForest
@@ -29,7 +28,7 @@ namespace CringeForestLibrary
         private const string DefaultJsonFileName = "ObjectTypesSpecification.json";
         private static IMapViewer _mapViewer;
 
-        public void Initialize(IMapViewer mapViewer)
+        public CringeForest(IMapViewer mapViewer)
         {
             Trace.Listeners.Add(new TextWriterTraceListener(File.CreateText("CringeForest.log")));
             Trace.AutoFlush = true;
@@ -50,7 +49,7 @@ namespace CringeForestLibrary
                 mapName = DefaultSavedMapName + "1" + MapExtension;
             }
 
-            for (int i = 1;; i++)
+            for (var i = 1;; i++)
             {
                 if (File.Exists(mapName))
                 {
@@ -107,7 +106,7 @@ namespace CringeForestLibrary
             {
                 var map = MapGenerator.GenerateMap(_mapViewer);
                 _animalSimulation = new AnimalSimulation(map);
-                _mapViewer.SetBackgroundView(map);
+                _mapViewer.SetInitialView(map);
 
                 MainLoop();
             }

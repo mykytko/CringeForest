@@ -1,6 +1,5 @@
 @page "/"
 @using CringeForestLibrary
-@using WebInterface
 @inject CringeForest CringeForest
 
 <PageTitle>CringeForest</PageTitle>
@@ -35,15 +34,9 @@
 
   private bool _simulationRunning;
 
-  protected override void OnInitialized()
-  {
-    
-    CringeForest.Initialize(new MapViewer());
-  }
-
   private void StartSimulation()
   {
-    CringeForest.InitializeSimulation();
+    Task.Run(CringeForest.InitializeSimulation);
     _simulationRunning = true;
   }
   

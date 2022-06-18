@@ -28,5 +28,157 @@
 </div>
 
 <script src="_framework/blazor.server.js"></script>
+<script>
+let foodDict = [];
+let canvas, ctx, imageData, scale, translatePos;
+
+function draw() {
+    ctx.clearRect(0, 0, translatePos.x,  canvas.height);
+    ctx.clearRect(0, 0, canvas.width, translatePos.y);
+    ctx.clearRect(translatePos.x + imageData.width * scale, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, translatePos.y + imageData.height * scale, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(translatePos.x, translatePos.y);
+    ctx.scale(scale, scale);
+    createImageBitmap(imageData).then(bitmap => {
+        ctx.drawImage(bitmap, translatePos.x, translatePos.y, imageData.height * scale, imageData.width * scale);
+        // draw plants
+        // draw animals
+    });
+    ctx.restore();
+}
+
+window.updateFoodRatio = (x, ratio) => {
+    console.log(x + ' ratio ' + foodDict[x].ratio + ' -> ' + ratio);
+    foodDict[x].ratio = ratio;
+    imageData.data[x * 4] = (1 - ratio) * foodDict[x].biomePixel.red + ratio * foodDict[x].foodPixel.red;
+    imageData.data[x * 4 + 1] = (1 - ratio) * foodDict[x].biomePixel.green + ratio * foodDict[x].foodPixel.green;
+    imageData.data[x * 4 + 2] = (1 - ratio) * foodDict[x].biomePixel.blue + ratio * foodDict[x].foodPixel.blue;
+    draw();
+}
+
+window.firstRender = (height, width, mapData, foodJson, graphicsJson) => {
+    canvas = document.getElementById('simulation');
+    canvas.width = window.innerWidth / 2 - 60;
+    canvas.height = window.innerHeight - 60;
+    ctx = canvas.getContext('2d');
+    imageData = ctx.createImageData(width, height);
+    let graphics = JSON.parse(graphicsJson);
+    for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+            let biomeId = mapData[i * width + j];
+            imageData.data[4 * i * width + 4 * j] = graphics.biomeColors[biomeId].red;
+            imageData.data[4 * i * width + 4 * j + 1] = graphics.biomeColors[biomeId].green;
+            imageData.data[4 * i * width + 4 * j + 2] = graphics.biomeColors[biomeId].blue;
+            imageData.data[4 * i * width + 4 * j + 3] = 255;
+        }
+    }
+    // parse ObjectTypesSpecification.json to r, g, b
+    let foodSuppliers = JSON.parse(foodJson);
+    Object.keys(foodSuppliers).forEach(key => {
+        let value = foodSuppliers[key];
+        let r = graphics.foodColors[value.FoodType].red;
+        let g = graphics.foodColors[value.FoodType].green;
+        let b = graphics.foodColors[value.FoodType].blue;
+        
+        // fill foodDict
+        foodDict[key] = { 
+            ratio: 1,
+            biomePixel: {
+                red: imageData.data[key * 4],
+                green: imageData.data[key * 4 + 1],
+                blue: imageData.data[key * 4 + 2]
+            },
+            foodPixel: {
+                red: r, 
+                green: g, 
+                blue: b
+            }
+        };
+        
+        imageData.data[key * 4] = r;
+        imageData.data[key * 4 + 1] = g;
+        imageData.data[key * 4 + 2] = b;
+    });
+    
+    // fill foods
+    // fill animals
+    
+    translatePos = {
+        x: 0,
+        y: 0
+    }
+    
+    let minScaleW = canvas.width / width;
+    let minScaleH = canvas.height / height;
+    let minScale = minScaleW < minScaleH ? minScaleW : minScaleH;
+    scale = minScale;
+    let scaleMultiplier = 0.95;
+    let startDragOffset = {};
+    let mouseDown = false;
+        
+    draw(scale, translatePos);
+    
+    function validateTranslatePos(translatePos, scale, minScale, imageData, canvas) {
+        if (scale >= minScale) {
+            if (translatePos.x > 0) {
+                translatePos.x = 0;
+                }
+            if (translatePos.y > 0) {
+                translatePos.y = 0;
+            }
+            if (translatePos.x < - imageData.width * scale + canvas.width)
+            {
+                translatePos.x = - imageData.width * scale + canvas.width;
+            }
+            if (translatePos.y < - imageData.height * scale + canvas.height)
+            {
+                translatePos.y = - imageData.height * scale + canvas.height;
+            }
+        }
+        return translatePos;
+    }
+    
+    canvas.addEventListener('wheel', function (event) {
+        if (event.deltaY < 0) {
+            scale /= scaleMultiplier;
+        } else if (event.deltaY > 0) {
+            scale *= scaleMultiplier;
+        }
+        if (scale < minScale) {
+            scale = minScale;
+        }
+        translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
+        draw(canvas, ctx, imageData, scale, translatePos);
+    });
+
+    canvas.addEventListener('mousedown', function (event) {
+        mouseDown = true;
+        startDragOffset.x = event.clientX - translatePos.x;
+        startDragOffset.y = event.clientY - translatePos.y;
+    });
+
+    canvas.addEventListener('mouseup', function (event) {
+        mouseDown = false;
+    });
+
+    canvas.addEventListener('mouseover', function (event) {
+        mouseDown = false;
+    });
+
+    canvas.addEventListener('mouseout', function (event) {
+        mouseDown = false;
+    });
+
+    canvas.addEventListener('mousemove', function (event) {
+        if (mouseDown) {
+            translatePos.x = event.clientX - startDragOffset.x;
+            translatePos.y = event.clientY - startDragOffset.y;
+            translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
+            draw(canvas, ctx, imageData, scale, translatePos);
+        }
+    });
+};
+</script>
 </body>
 </html>

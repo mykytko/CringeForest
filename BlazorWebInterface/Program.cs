@@ -1,20 +1,16 @@
+using BlazorWebInterface.Pages;
 using CringeForestLibrary;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR;
+using WebInterface;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddSignalR().AddMessagePackProtocol();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton(new CringeForest());
-
-var hubConnection = new HubConnectionBuilder().WithUrl("127.0.0.1").Build();
-
-// maybe receive a message
-
-await hubConnection.StartAsync();
-builder.Services.AddSingleton(hubConnection);
+var mapViewer = new MapViewer();
+builder.Services.AddSingleton(new CringeForest(mapViewer));
 
 var app = builder.Build();
 
@@ -33,8 +29,15 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapBlazorHub();
+app.MapHub<MapHub>("/simulation");
+app.MapHub<StatisticsHub>("/statistics");
 app.MapFallbackToPage("/_Host");
 
-app.Run();
+app.Use(async (context, next) =>
+{
+    mapViewer.HubContext = context.RequestServices.GetRequiredService<IHubContext<MapHub>>();
 
-await hubConnection.DisposeAsync();
+    await next.Invoke();
+});
+
+app.Run();

@@ -16,11 +16,6 @@
       "GrowthRate": 0.05
     },
     {
-      "Name": "EmptyTree",
-      "Saturation": 5,
-      "GrowthRate": 0.15
-    },
-    {
       "Name": "NutTree",
       "Saturation": 40,
       "GrowthRate": 0.01
@@ -32,7 +27,7 @@
       "Name": "Giraffe",
       "FoodTypes": [
         "Grass",
-        "EmptyTree"
+        "NutTree"
       ],
       "IsPredatory": false,
       "FoodIntake": 35,
@@ -117,8 +112,8 @@
       },
       "FoodShares": {
         "Grass": 94,
-        "BerryBush": 1,
-        "EmptyTree": 5
+        "BerryBush": 4,
+        "NutTree": 2
       }
     },
     {
@@ -135,8 +130,7 @@
       "FoodShares": {
         "Mushroom": 8,
         "BerryBush": 2,
-        "EmptyTree": 85,
-        "NutTree": 5
+        "NutTree": 90
       }
     }
   ]

@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualBasic.CompilerServices;
 
@@ -40,26 +42,34 @@ namespace CringeForestLibrary
     public class FoodSupplier
     {
         private int _saturation;
-        public int Type { get; }
 
         public int Saturation
         {
             get => _saturation;
             set
             {
-                if (value < 0 || value > Metadata.FoodSpecifications[Type].Saturation)
+                if (value < 0 || value > Metadata.FoodSpecifications[FoodType].Saturation)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-
+                
                 _saturation = value;
             }
         }
 
-        public FoodSupplier(int type)
+        public int FoodType { get; set; }
+
+        [JsonConstructor]
+        public FoodSupplier(int foodType, int saturation)
         {
-            Type = type;
-            Saturation = Metadata.FoodSpecifications[Type].Saturation;
+            FoodType = foodType;
+            Saturation = saturation;
+        }
+
+        public FoodSupplier(int foodType)
+        {
+            FoodType = foodType;
+            Saturation = Metadata.FoodSpecifications[FoodType].Saturation;
         }
     }
 

@@ -15,7 +15,7 @@ namespace CringeForestLibrary
             var foodGenerator = new GenerateFood();
             var food = foodGenerator.TemplateGenerate(terrain, height, width);
             var animalGenerator = new GenerateAnimal();
-            var animals = animalGenerator.TemplateGenerate(terrain, height, width);
+            ConcurrentDictionary<int, Animal> animals = animalGenerator.TemplateGenerate(terrain, height, width);
             //---//
             //var food = GenerateFoodSuppliers(terrain, height, width);
             //var animals = GenerateAnimals(terrain, height, width);
@@ -26,7 +26,7 @@ namespace CringeForestLibrary
 
         private static Map.Pixel[,] GenerateTerrain(int height, int width)
         {
-            var biggestDimension = (height > width ? height : width);
+            var biggestDimension = height > width ? height : width;
             var perlinNoise = new PerlinNoise(biggestDimension);
             var terrain = new Map.Pixel[height, width];
             for(var i = 0; i < height; i++)
@@ -43,8 +43,8 @@ namespace CringeForestLibrary
             var biomeId = -1;
             for(var i = 0; i < Metadata.BiomeSpecifications.Count; i++)
             {
-                if (value <= Metadata.BiomeSpecifications[i].LowerBound ||
-                    value >= Metadata.BiomeSpecifications[i].UpperBound)
+                if (value < Metadata.BiomeSpecifications[i].LowerBound ||
+                    value > Metadata.BiomeSpecifications[i].UpperBound)
                 {
                     continue;
                 }
@@ -61,7 +61,7 @@ namespace CringeForestLibrary
             {
                 var result = InitT();
                 var rand = new Random();
-                const double averageAmount = 100.0;
+                const double averageAmount = 1000.0;
                 var baselineProbability = averageAmount / (height * width);
                 for (var i = 0; i < height; i++)
                 {
@@ -72,13 +72,13 @@ namespace CringeForestLibrary
                         {
                             continue;
                         }
-                        var biomeId = terrain[i, j].BiomeId;
+                        var biomeId = terrain[j, i].BiomeId;
                         var resultType = DetermineResultType(rand, biomeId);
                         if (resultType == -1)
                         {
                             continue;
                         }
-                        GenerateInstance(in result, i, j, resultType, rand);
+                        GenerateInstance(in result, j, i, resultType, rand);
                     }
                 }
                 return result;
@@ -114,11 +114,13 @@ namespace CringeForestLibrary
                 collection.Add((i, j), foodSupplier);
             }
         }
-        private class GenerateAnimal : Generate<ConcurrentDictionary<(int, int), Animal>>
+        private class GenerateAnimal : Generate<ConcurrentDictionary<int, Animal>>
         {
-            protected override ConcurrentDictionary<(int, int), Animal> InitT()
+            private Generate<ConcurrentDictionary<int, Animal>> _generateImplementation;
+
+            protected override ConcurrentDictionary<int, Animal> InitT()
             {
-                return new ConcurrentDictionary<(int, int), Animal>();
+                return new ConcurrentDictionary<int, Animal>();
             }
             protected override int DetermineResultType(Random rand, int biomeId)
             {
@@ -136,11 +138,11 @@ namespace CringeForestLibrary
                 return result;
             }
             protected override void GenerateInstance(
-                in ConcurrentDictionary<(int, int), Animal> collection, int i, int j, int resultType, Random rand)
+                in ConcurrentDictionary<int, Animal> collection, int i, int j, int resultType, Random rand)
             {
                 var animal = new Animal(resultType,
                         rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
-                collection.TryAdd((i, j), animal);
+                collection.TryAdd(animal.Id, animal);
             }
         }
         //---//
