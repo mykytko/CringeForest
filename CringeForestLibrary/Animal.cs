@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Transactions;
@@ -36,6 +37,11 @@ namespace CringeForestLibrary
                 pos.Item2 = map.Height - 1;
             }
 
+            if (map.AnimalIdByPos.ContainsKey(pos))
+            {
+                pos = Animal.FindEmptySpotNearCoords(pos);
+            }
+
             return pos;
         }
 
@@ -56,7 +62,7 @@ namespace CringeForestLibrary
             
             var pos = Hungry(saturation, spec.FoodIntake) ? 
                 LookForFood(type, position, in map, fov) : LookForPartners(type, position, in map, fov);
-            
+
             if (pos == (-1, -1))
             {
                 var rand = new Random();
@@ -423,14 +429,56 @@ namespace CringeForestLibrary
                             + " has been eaten by a " + Metadata.AnimalSpecifications[winner.Type].Name);
         }
 
-        private (int, int) FindEmptySpotNearCoords((int, int) coords)
+        internal static (int, int) FindEmptySpotNearCoords((int, int) coords)
         {
             var spot = coords;
             var animalIdByPos = _map.AnimalIdByPos;
-            
-            while (animalIdByPos.ContainsKey(spot))
+
+            var coord = new Random().Next(2);
+            var sign = new Random().Next(2);
+            if (sign == 0)
             {
-                spot.Item1++;
+                sign = -1;
+            }
+            
+            var newSpot = spot;
+            if (coord == 0)
+            {
+                newSpot.Item1 += sign;
+            }
+            else
+            {
+                newSpot.Item2 += sign;
+            }
+
+            if (!animalIdByPos.ContainsKey(newSpot))
+            {
+                return newSpot;
+            }
+
+            var dir = 0;
+            var step = 0;
+            while (animalIdByPos.ContainsKey(spot) || spot.Item1 < 0 || spot.Item2 < 0
+                   || spot.Item1 >= _map.Width || spot.Item2 >= _map.Height)
+            {
+                switch (dir % 4)
+                {
+                    case 0:
+                        step++;
+                        spot.Item1 += step;
+                        break;
+                    case 1:
+                        spot.Item2 += step;
+                        break;
+                    case 2:
+                        step++;
+                        spot.Item1 -= step;
+                        break;
+                    case 3:
+                        spot.Item2 -= step;
+                        break;
+                }
+                dir++;
             }
 
             return spot;
@@ -440,11 +488,12 @@ namespace CringeForestLibrary
         {
             const int hungerDecay = 1;
             Saturation -= hungerDecay;
-            if (Saturation < 0)
+            _age++;
+            if (Saturation < 0 || _age > _maxAge)
             {
                 map.DeleteAnimalByPos(Position());
                 Trace.WriteLine("Animal " + Id + " " + Metadata.AnimalSpecifications[Type].Name + " at " 
-                                + Position() + " died of hunger.");
+                                + Position() + " died of natural cause.");
                 return;
             }
 
@@ -455,8 +504,12 @@ namespace CringeForestLibrary
             var animals = map.AnimalsById;
             if (animalIdByPos.ContainsKey(coords)) // Is there an animal?
             {
+                var animal = animals[animalIdByPos[coords]];
                 if (animals[animalIdByPos[coords]].Type == Type)
                 {
+                    var saturationChange = (int) Math.Round(Metadata.AnimalSpecifications[Type].FoodIntake * 0.8);
+                    Saturation -= saturationChange;
+                    animal.Saturation -= saturationChange;
                     var newCoords = FindEmptySpotNearCoords(coords);
                     map.AddAnimal(newCoords, new Animal(Type,
                         new Random().Next(2) == 0 ? AnimalSex.Male : AnimalSex.Female, newCoords));
