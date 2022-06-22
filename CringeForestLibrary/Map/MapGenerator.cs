@@ -15,7 +15,7 @@ namespace CringeForestLibrary
             var foodGenerator = new GenerateFood();
             var food = foodGenerator.TemplateGenerate(terrain, height, width);
             var animalGenerator = new GenerateAnimal();
-            ConcurrentDictionary<int, Animal> animals = animalGenerator.TemplateGenerate(terrain, height, width);
+            var animals = animalGenerator.TemplateGenerate(terrain, height, width);
             //---//
             //var food = GenerateFoodSuppliers(terrain, height, width);
             //var animals = GenerateAnimals(terrain, height, width);

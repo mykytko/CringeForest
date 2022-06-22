@@ -52,7 +52,7 @@
       ],
       "IsPredatory": true,
       "FoodIntake": 2,
-      "Speed": 2,
+      "Speed": 5,
       "MaxAge": 3
     },
     {
@@ -82,7 +82,7 @@
       "FoodTypes": [],
       "IsPredatory": true,
       "FoodIntake": 30,
-      "Speed": 4,
+      "Speed": 3,
       "MaxAge": 5
     }
   ],
@@ -121,11 +121,11 @@
       "LowerBound": 0.65,
       "UpperBound": 1,
       "AnimalShares": {
-        "Giraffe": 15,
+        "Giraffe": 20,
         "Hedgehog": 20,
         "Squirrel": 50,
         "Fox": 5,
-        "Wolf": 10
+        "Wolf": 5
       },
       "FoodShares": {
         "Mushroom": 8,

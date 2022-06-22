@@ -6,15 +6,6 @@ using System.Diagnostics;
 
 namespace CringeForestLibrary
 {
-    public interface IMapViewer
-    {
-        public void AddAnimalView((int, int) coords, Animal animal);
-        public void DeleteAnimalView(int id);
-        public void MoveAnimalView(int id, (int, int) coords2);
-        public void SetFoodView((int, int) coords, double ratio);
-        void SetInitialView(Map map);
-    }
-    
     public class CringeForest
     {
         private AnimalSimulation _animalSimulation;
@@ -27,8 +18,9 @@ namespace CringeForestLibrary
         private const string MapExtension = ".cfm";
         private const string DefaultJsonFileName = "ObjectTypesSpecification.json";
         private static IMapViewer _mapViewer;
+        private static IStatisticsViewer _statisticsViewer;
 
-        public CringeForest(IMapViewer mapViewer)
+        public CringeForest(IMapViewer mapViewer, IStatisticsViewer statisticsViewer)
         {
             Trace.Listeners.Add(new TextWriterTraceListener(File.CreateText("CringeForest.log")));
             Trace.AutoFlush = true;
@@ -39,6 +31,7 @@ namespace CringeForestLibrary
             }
 
             _mapViewer = mapViewer;
+            _statisticsViewer = statisticsViewer;
         }
         
         public string SaveMap()
@@ -105,7 +98,7 @@ namespace CringeForestLibrary
             try
             {
                 var map = MapGenerator.GenerateMap(_mapViewer);
-                _animalSimulation = new AnimalSimulation(map);
+                _animalSimulation = new AnimalSimulation(map, _statisticsViewer);
                 _mapViewer.SetInitialView(map);
 
                 MainLoop();

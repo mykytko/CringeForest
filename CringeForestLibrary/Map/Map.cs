@@ -23,8 +23,8 @@ namespace CringeForestLibrary
         public Pixel[,] Matrix { get; }
         public Dictionary<(int, int), FoodSupplier> Food { get; }
         public ConcurrentDictionary<int, Animal> AnimalsById { get; }
-        public ConcurrentDictionary<(int, int), int> AnimalIdByPos { get; }
-        private List<int> _animalsToDelete = new();
+        public Dictionary<(int, int), int> AnimalIdByPos { get; }
+        private readonly List<int> _animalsToDelete = new();
         
         public Map(IMapViewer mapViewer, int height, int width, Pixel[,] matrix, 
             Dictionary<(int, int), FoodSupplier> food, ConcurrentDictionary<int, Animal> animals)
@@ -35,10 +35,10 @@ namespace CringeForestLibrary
             Matrix = matrix;
             Food = food;
             AnimalsById = animals;
-            AnimalIdByPos = new ConcurrentDictionary<(int, int), int>();
+            AnimalIdByPos = new Dictionary<(int, int), int>();
             foreach (var animal in animals)
             {
-                AnimalIdByPos.TryAdd(animal.Value.Position(), animal.Key);
+                AnimalIdByPos.Add(animal.Value.Position(), animal.Key);
                 Trace.WriteLine(animal.Value.Sex + " " + Metadata.AnimalSpecifications[animal.Value.Type].Name);
             }
             _mapViewer = mapViewer;
@@ -49,13 +49,14 @@ namespace CringeForestLibrary
         {
             (animal.X, animal.Y) = coords;
             AnimalsById.TryAdd(animal.Id, animal);
-            AnimalIdByPos.TryAdd(coords, animal.Id);
-            _mapViewer.AddAnimalView(coords, animal);
+            AnimalIdByPos.Add(coords, animal.Id);
+            _mapViewer.AddAnimalView(animal);
         }
 
         public void DeleteAnimalByPos((int, int) coords)
         {
-            AnimalIdByPos.TryRemove(coords, out var id);
+            AnimalIdByPos.Remove(coords, out var id);
+            _animalsToDelete.Add(id);
             _mapViewer.DeleteAnimalView(id);
         }
 
@@ -68,10 +69,29 @@ namespace CringeForestLibrary
             _animalsToDelete.Clear();
         }
 
+        public void GrowFood()
+        {
+            const int growthRate = 2;
+            foreach (var (coords, food) in Food)
+            {
+                var maxSaturation = Metadata.FoodSpecifications[food.FoodType].Saturation;
+                if (food.Saturation < maxSaturation - growthRate)
+                {
+                    food.Saturation += growthRate;
+                    UpdateFood(coords);
+                }
+                else if (food.Saturation < maxSaturation)
+                {
+                    food.Saturation = maxSaturation;
+                    UpdateFood(coords);
+                }
+            }
+        }
+
         public void MoveAnimal((int, int) coords1, (int, int) coords2)
         {
-            AnimalIdByPos.TryRemove(coords1, out var id);
-            AnimalIdByPos.TryAdd(coords2, id);
+            AnimalIdByPos.Remove(coords1, out var id);
+            AnimalIdByPos.Add(coords2, id);
             (AnimalsById[id].X, AnimalsById[id].Y) = coords2;
             
             _mapViewer.MoveAnimalView(id, coords2);

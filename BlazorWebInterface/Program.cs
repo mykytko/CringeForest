@@ -10,7 +10,8 @@ builder.Services.AddRazorPages();
 builder.Services.AddSignalR().AddMessagePackProtocol();
 builder.Services.AddServerSideBlazor();
 var mapViewer = new MapViewer();
-builder.Services.AddSingleton(new CringeForest(mapViewer));
+var statisticsViewer = new StatisticsViewer();
+builder.Services.AddSingleton(new CringeForest(mapViewer, statisticsViewer));
 
 var app = builder.Build();
 
@@ -36,6 +37,7 @@ app.MapFallbackToPage("/_Host");
 app.Use(async (context, next) =>
 {
     mapViewer.HubContext = context.RequestServices.GetRequiredService<IHubContext<MapHub>>();
+    statisticsViewer.HubContext = context.RequestServices.GetRequiredService<IHubContext<StatisticsHub>>();
 
     await next.Invoke();
 });

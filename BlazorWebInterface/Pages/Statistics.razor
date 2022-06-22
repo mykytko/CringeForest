@@ -1,21 +1,47 @@
 @using Blazor.Extensions
 @using Blazor.Extensions.Canvas.Canvas2D
+@using Blazor.Extensions.Canvas.WebGL
 @using CringeForestLibrary
-<BECanvas Width="640" Height="640" @ref="_canvasReference" ></BECanvas>
+@using Microsoft.AspNetCore.SignalR.Client
+@using WebInterface
+@using JsonSerializer = System.Text.Json.JsonSerializer
+@using System.Diagnostics
+@using WebInterface.Serializable
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+<canvas id="statistics" width="800" height="500"></canvas>
 
 @code {
-    private Canvas2DContext _context = null!;
-    private BECanvasComponent _canvasReference = null!;
-    private int width, height;
+    private HubConnection? _hubConnection;
+    private int _width, _height;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _context = await _canvasReference.CreateCanvas2DAsync();
-        await _context.SetFillStyleAsync("green");
+        if (!firstRender)
+        {
+            return;
+        }
 
-        await _context.FillRectAsync(10, 100, 100, 100);
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl("wss://127.0.0.1:7025/statistics", options =>
+            {
+                options.WebSocketConfiguration = conf =>
+                {
+                    conf.RemoteCertificateValidationCallback =
+                        (_, _, _, _) => true;
+                };
+                options.HttpMessageHandlerFactory = _ => new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                };
+            }).AddMessagePackProtocol().Build();
 
-        await _context.SetFontAsync("48px serif");
-        await _context.StrokeTextAsync("Statistics", 10, 100);
+        _hubConnection.On<string>("ReceiveStatistics", receivedStatistics =>
+        {
+            InvokeAsync(StateHasChanged);
+            JsRuntime.InvokeVoidAsync("updateStatistics", receivedStatistics);
+        });
+
+        await _hubConnection.StartAsync();
     }
 }

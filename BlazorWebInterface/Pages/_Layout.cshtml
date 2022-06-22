@@ -209,8 +209,21 @@ window.firstRender = (height, width, mapData, foodJson, animalsJson, graphicsJso
         }
     }
     ["down","up","move"].forEach(name => document.addEventListener("mouse" + name, mouseEvents));
-
 };
+
+window.updateStatistics = (jsonDict) => {
+    let canvas = document.getElementById('statistics');
+    let ctx = canvas.getContext('2d');
+    let dict = JSON.parse(jsonDict);
+    ctx.font = "14px Arial";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let len = Object.keys(dict).length;
+    let iter = 0;
+    Object.keys(dict).forEach(key => {
+        ctx.fillText(key + ' - ' + dict[key], 10, 50 + iter * 400 / len);
+        iter++;
+    });
+}
 </script>
 </body>
 </html>

@@ -17,7 +17,7 @@ namespace WebInterface
                 JsonSerializer.Serialize(new SerializableMap(map)));
         }
         
-        public async void AddAnimalView((int, int) coords, Animal animal)
+        public async void AddAnimalView(Animal animal)
         {
             await HubContext.Clients.All.SendAsync("ReceiveAdd",
                 JsonSerializer.Serialize(new KeyValuePair<int, CoordsAndType>(animal.Id, 
