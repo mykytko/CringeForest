@@ -211,17 +211,54 @@ window.firstRender = (height, width, mapData, foodJson, animalsJson, graphicsJso
     ["down","up","move"].forEach(name => document.addEventListener("mouse" + name, mouseEvents));
 };
 
+let statistics = [];
+
 window.updateStatistics = (jsonDict) => {
     let canvas = document.getElementById('statistics');
     let ctx = canvas.getContext('2d');
     let dict = JSON.parse(jsonDict);
+    if (Object.keys(dict).length === 0) {
+        return;    
+    }
+    statistics.push(dict);
     ctx.font = "14px Arial";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let len = Object.keys(dict).length;
-    let iter = 0;
-    Object.keys(dict).forEach(key => {
-        ctx.fillText(key + ' - ' + dict[key], 10, 50 + iter * 400 / len);
-        iter++;
+    let len = Object.keys(statistics).length;
+    let max = 0;
+    Object.keys(statistics).forEach(key => {
+        Object.keys(statistics[key]).forEach(sKey => {
+            if (statistics[key][sKey] > max) {
+                max = statistics[key][sKey];    
+            }
+        });
+    });
+    let animalIter = 0;
+    let animalsLen = Object.keys(statistics[0]).length;
+    Object.keys(statistics[0]).forEach(animal => {
+        let i = 0;
+        let r = 128 + 127 * animalIter / animalsLen;
+        let g = 255 * (animalsLen - animalIter) / animalsLen;
+        let b = 255 * animalIter / animalsLen;
+        ctx.strokeStyle = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fillText(animal, 50 + 750 * animalIter / animalsLen, 385);
+        ctx.fillStyle = 'black';
+        ctx.fillText('0', 86, 350);
+        ctx.fillText(max, 50, 14);
+        ctx.beginPath();
+        ctx.moveTo(100, 350 * (1 - statistics[0][animal] / max));
+        Object.keys(statistics).forEach(key => {
+            let current;
+            if (animal in statistics[key]) {
+                current = statistics[key][animal];
+            } else {
+                current = 0;
+            }
+            ctx.lineTo(100 + 700 * i / len, 350 * (1 - current / max));
+            i++;
+        });
+        ctx.stroke();
+        animalIter++;
     });
 }
 </script>
