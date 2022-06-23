@@ -11,7 +11,7 @@ internal partial class PredatoryBrain
         }
 
         var myStrength = Metadata.AnimalSpecifications[type].FoodIntake;
-        var hisStrength = Metadata.AnimalSpecifications[map.AnimalsById[map.AnimalIdByPos[pos]].Type].FoodIntake;
+        var hisStrength = Metadata.AnimalSpecifications[map.AnimalsById[map.AnimalIdByPos[pos]].AnimalType].FoodIntake;
         return myStrength < hisStrength ? 
             ValidatePos(in map, (2 * position.Item1 - pos.Item1, 2 * position.Item2 - pos.Item2)) : pos;
     }

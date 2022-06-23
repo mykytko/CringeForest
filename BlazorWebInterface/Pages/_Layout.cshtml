@@ -29,11 +29,11 @@
 
 <script src="_framework/blazor.server.js"></script>
 <script>
-let foodDict = [];
-let animals = [];
-let animalImg = [];
-let fgCanvas, canvas, imageData, scale, translatePos;
+let foodDict, animals, animalImg, statistics;
+let fgCanvas, canvas, imageData, scale, translatePos, minScale;
 let update = true;
+let reset = false;
+let initialized = false;
 
 function draw() {
     if (update) {
@@ -51,10 +51,17 @@ function draw() {
         
         // draw animals
         Object.values(animals).forEach(animal => {
-            fgCanvas.ctx.drawImage(animalImg[animal.AnimalType], 
-                animal.X * scale + translatePos.x, animal.Y * scale + translatePos.y, scale, scale);
+            let x = animal.X * scale + translatePos.x;
+            let y = animal.Y * scale + translatePos.y;
+            if (0 <= x && x < fgCanvas.width && 0 <= y && y <= fgCanvas.height) {
+                fgCanvas.ctx.drawImage(animalImg[animal.AnimalType], x, y, scale, scale);
+            }
         });
         canvas.ctx.restore();
+    }
+    if (reset) {
+        reset = false;
+        return;
     }
     requestAnimationFrame(draw);
 }
@@ -83,13 +90,93 @@ window.updateFoodRatio = (x, ratio) => {
     update = true;
 }
 
-window.firstRender = (height, width, mapData, foodJson, animalsJson, graphicsJson) => {
+window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+    const arrayBuffer = await contentStreamReference.arrayBuffer();
+    const blob = new Blob([arrayBuffer]);
+    const url = URL.createObjectURL(blob);
+    const anchorElement = document.createElement('a');
+    anchorElement.href = url;
+    anchorElement.download = fileName ?? '';
+    anchorElement.click();
+    anchorElement.remove();
+    URL.revokeObjectURL(url);
+}
+
+function validateTranslatePos(translatePos, scale, minScale, imageData, canvas) {
+        if (scale >= minScale) {
+            if (translatePos.x > 0) {
+                translatePos.x = 0;
+                }
+            if (translatePos.y > 0) {
+                translatePos.y = 0;
+            }
+            if (translatePos.x < - imageData.width * scale + canvas.width)
+            {
+                translatePos.x = - imageData.width * scale + canvas.width;
+            }
+            if (translatePos.y < - imageData.height * scale + canvas.height)
+            {
+                translatePos.y = - imageData.height * scale + canvas.height;
+            }
+        }
+        return translatePos;
+    }
+
+function initialize() {
     canvas = document.createElement('canvas');
+    fgCanvas = document.getElementById('simulation');
+    const mouse  = {x : 0, y : 0, oldX : 0, oldY : 0, button : false}
+    function mouseEvents(e){
+                mouse.oldX = mouse.x;
+                mouse.oldY = mouse.y;
+                mouse.x = e.pageX;
+                mouse.y = e.pageY;
+                mouse.button = e.type === "mousedown" ? true : e.type === "mouseup" ? false : mouse.button;
+                if (mouse.button) {
+                    translatePos.x += mouse.x - mouse.oldX;
+                    translatePos.y += mouse.y - mouse.oldY;
+                    translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
+                    update = true;
+                }
+            }
+    ["down", "up", "move"].forEach(name => document.addEventListener("mouse" + name, mouseEvents));
+    
+    let scaleMultiplier = 0.95;
+    
+    fgCanvas.addEventListener('wheel', function (event) {
+            if (event.deltaY < 0) {
+                scale /= scaleMultiplier;
+            } else if (event.deltaY > 0) {
+                scale *= scaleMultiplier;
+            }
+            if (scale < minScale) {
+                scale = minScale;
+            }
+            translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
+            update = true;
+        });
+    initialized = true;
+}
+
+window.reset = () => {
+    reset = true;
+}
+
+window.firstRender = (height, width, mapData, foodJson, animalsJson, graphicsJson) => {
+    if (!initialized) {
+        initialize();
+    }
+    
+    foodDict = [];
+    animals = [];
+    statistics = [];
+    update = true;
+    
     canvas.width = window.innerWidth / 2 - 60;
     canvas.height = window.innerHeight - 60;
     canvas.ctx = canvas.getContext('2d');
+    canvas.ctx.imageSmoothingEnabled = false;
     
-    fgCanvas = document.getElementById('simulation');
     fgCanvas.width = window.innerWidth / 2 - 60;
     fgCanvas.height = window.innerHeight - 60;
     fgCanvas.ctx = fgCanvas.getContext('2d');
@@ -152,66 +239,14 @@ window.firstRender = (height, width, mapData, foodJson, animalsJson, graphicsJso
     
     let minScaleW = fgCanvas.width / width;
     let minScaleH = fgCanvas.height / height;
-    let minScale = minScaleW < minScaleH ? minScaleW : minScaleH;
+    minScale = minScaleW < minScaleH ? minScaleW : minScaleH;
     if (minScale < 16) {
         minScale = 16;
     }
     scale = minScale;
-    let scaleMultiplier = 0.95;
         
     requestAnimationFrame(draw);
-    
-    function validateTranslatePos(translatePos, scale, minScale, imageData, canvas) {
-        if (scale >= minScale) {
-            if (translatePos.x > 0) {
-                translatePos.x = 0;
-                }
-            if (translatePos.y > 0) {
-                translatePos.y = 0;
-            }
-            if (translatePos.x < - imageData.width * scale + canvas.width)
-            {
-                translatePos.x = - imageData.width * scale + canvas.width;
-            }
-            if (translatePos.y < - imageData.height * scale + canvas.height)
-            {
-                translatePos.y = - imageData.height * scale + canvas.height;
-            }
-        }
-        return translatePos;
-    }
-    
-    fgCanvas.addEventListener('wheel', function (event) {
-        if (event.deltaY < 0) {
-            scale /= scaleMultiplier;
-        } else if (event.deltaY > 0) {
-            scale *= scaleMultiplier;
-        }
-        if (scale < minScale) {
-            scale = minScale;
-        }
-        translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
-        update = true;
-    });
-    
-    const mouse  = {x : 0, y : 0, oldX : 0, oldY : 0, button : false}
-    function mouseEvents(e){
-        mouse.oldX = mouse.x;
-        mouse.oldY = mouse.y;
-        mouse.x = e.pageX;
-        mouse.y = e.pageY;
-        mouse.button = e.type === "mousedown" ? true : e.type === "mouseup" ? false : mouse.button;
-        if (mouse.button) {
-            translatePos.x += mouse.x - mouse.oldX;
-            translatePos.y += mouse.y - mouse.oldY;
-            translatePos = validateTranslatePos(translatePos, scale, minScale, imageData, canvas);
-            update = true;
-        }
-    }
-    ["down","up","move"].forEach(name => document.addEventListener("mouse" + name, mouseEvents));
 };
-
-let statistics = [];
 
 window.updateStatistics = (jsonDict) => {
     let canvas = document.getElementById('statistics');

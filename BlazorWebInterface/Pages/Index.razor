@@ -1,6 +1,7 @@
 @page "/"
 @using CringeForestLibrary
 @inject CringeForest CringeForest
+@inject IJSRuntime JsRuntime
 
 <PageTitle>CringeForest</PageTitle>
 
@@ -21,11 +22,20 @@
 
   <div class="menu">
     <p>Menu</p>
-    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="StartSimulation">Start simulation</button>
-    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="LoadMap">Load map</button>
-    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="SaveMap">Save map</button>
-    <button class="btn btn-primary" disabled="@(_simulationRunning)" @onclick="ChangeInitialParameters">Change initial parameters</button>
-    <button class="btn btn-primary" disabled="@(!_simulationRunning)" @onclick="StopSimulation">Stop simulation</button>
+    <button class="btn btn-primary" hidden="@(!_inputFileDisabled || _simulationRunning)" @onclick="StartSimulation">
+      Start new simulation
+    </button>
+    <div class="input-file" hidden="@_inputFileDisabled"><InputFile OnChange="@LoadMap" /></div>
+    <button class="btn btn-primary" hidden="@(!_inputFileDisabled || _simulationRunning)" @onclick="PrepareLoadMap">
+      Load map
+    </button>
+    <button class="btn btn-primary" hidden="@(!_inputFileDisabled || _noSimulation || _simulationRunning)" 
+            @onclick="SaveMap">
+      Save map
+    </button>
+    <button class="btn btn-primary" hidden="@(!_inputFileDisabled || !_simulationRunning)" @onclick="StopSimulation">
+      Stop simulation
+    </button>
   </div>
 </div>
 
@@ -33,30 +43,56 @@
 {
 
   private bool _simulationRunning;
+  private bool _noSimulation = true;
+  private bool _inputFileDisabled = true;
+  private string _map;
 
   private void StartSimulation()
   {
     Task.Run(CringeForest.InitializeSimulation);
     _simulationRunning = true;
-  }
-  
-  private void LoadMap()
-  {
+    _noSimulation = false;
   }
 
-  private void SaveMap()
+  private void PrepareLoadMap()
   {
-    CringeForest.SaveMap();
+    _inputFileDisabled = false;
   }
-  
-  private void ChangeInitialParameters()
+
+  private async Task LoadMap(InputFileChangeEventArgs e)
   {
+    await using FileStream fs = new("map.tmp", FileMode.Create);
+    await e.File.OpenReadStream().CopyToAsync(fs);
+    fs.Position = 0;
+    var reader = new StreamReader(fs);
+    var map = await reader.ReadToEndAsync();
+    CringeForest.LoadMap(map);
+    _inputFileDisabled = true;
   }
-  
-  private void StopSimulation()
+
+  private async void SaveMap()
+  {
+    const string fileName = "savedMap.json";
+    
+    var stream = new MemoryStream();
+    var writer = new StreamWriter(stream);
+    await writer.WriteAsync(_map);
+    await writer.FlushAsync();
+    stream.Position = 0;
+    
+    using var streamRef = new DotNetStreamReference(stream);
+    
+    await JsRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+  }
+
+  private async void StopSimulation()
   {
     _simulationRunning = false;
-    CringeForest.StopSimulation();
+
+    _map = CringeForest.SaveMap();
+    CringeForest.ExitSimulation();
+
+    await JsRuntime.InvokeVoidAsync("reset");
   }
   
 }

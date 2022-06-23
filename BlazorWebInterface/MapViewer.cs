@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorWebInterface.Pages;
+using BlazorWebInterface.Serializable;
 using CringeForestLibrary;
 using Microsoft.AspNetCore.SignalR;
 using WebInterface.Serializable;
@@ -21,7 +22,7 @@ namespace WebInterface
         {
             await HubContext.Clients.All.SendAsync("ReceiveAdd",
                 JsonSerializer.Serialize(new KeyValuePair<int, CoordsAndType>(animal.Id, 
-                    new CoordsAndType(animal.X, animal.Y, animal.Type))));
+                    new CoordsAndType(animal.X, animal.Y, animal.AnimalType))));
         }
 
         public async void DeleteAnimalView(int id)

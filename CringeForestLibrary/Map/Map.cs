@@ -25,6 +25,38 @@ namespace CringeForestLibrary
         public ConcurrentDictionary<int, Animal> AnimalsById { get; }
         public Dictionary<(int, int), int> AnimalIdByPos { get; }
         private readonly List<int> _animalsToDelete = new();
+
+        public Map(SerializableMap map, IMapViewer mapViewer)
+        {
+            Height = map.Height;
+            Width = map.Width;
+            Matrix = new Pixel[Width, Height];
+            for (var i = 0; i < Height; i++)
+            {
+                for (var j = 0; j < Width; j++)
+                {
+                    Matrix[j, i] = new Pixel(map.Matrix[i][j]);
+                }
+            }
+
+            Food = new Dictionary<(int, int), FoodSupplier>();
+            foreach (var (key, value) in map.FoodSuppliers)
+            {
+                var y = key / Width;
+                var x = key % Width;
+                Food.Add((x, y), value);
+            }
+
+            AnimalIdByPos = new Dictionary<(int, int), int>();
+            AnimalsById = new ConcurrentDictionary<int, Animal>();
+            foreach (var (key, value) in map.Animals)
+            {
+                AnimalsById.TryAdd(key, value);
+                AnimalIdByPos.Add(value.Position(), key);
+            }
+
+            _mapViewer = mapViewer;
+        }
         
         public Map(IMapViewer mapViewer, int height, int width, Pixel[,] matrix, 
             Dictionary<(int, int), FoodSupplier> food, ConcurrentDictionary<int, Animal> animals)
@@ -39,7 +71,7 @@ namespace CringeForestLibrary
             foreach (var animal in animals)
             {
                 AnimalIdByPos.Add(animal.Value.Position(), animal.Key);
-                Trace.WriteLine(animal.Value.Sex + " " + Metadata.AnimalSpecifications[animal.Value.Type].Name);
+                Trace.WriteLine(animal.Value.Sex + " " + Metadata.AnimalSpecifications[animal.Value.AnimalType].Name);
             }
             _mapViewer = mapViewer;
             Trace.WriteLine("The map is initialized");

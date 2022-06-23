@@ -32,7 +32,7 @@ namespace CringeForestLibrary
 
         private static int _currentId = 0;
         public int Id { get; set; }
-        public int Type { get; set; }
+        public int AnimalType { get; set; }
         public AnimalSex Sex { get; set; }
         public int Saturation { get; set; }
         private int _foodIntake;
@@ -55,29 +55,29 @@ namespace CringeForestLibrary
         }
 
         [JsonConstructor]
-        public Animal(int id, int type, AnimalSex sex, int saturation, int x, int y)
+        public Animal(int id, int animalType, AnimalSex sex, int saturation, int x, int y)
         {
             Id = id;
-            Type = type;
+            AnimalType = animalType;
             Sex = sex;
             Saturation = saturation;
             X = x;
             Y = y;
         }
 
-        public Animal(int type, AnimalSex sex, (int, int) position)
+        public Animal(int animalType, AnimalSex sex, (int, int) position)
         {
-            Trace.WriteLine("Creating a " + sex + " " + Metadata.AnimalSpecifications[type].Name);
+            Trace.WriteLine("Creating a " + sex + " " + Metadata.AnimalSpecifications[animalType].Name);
             Id = _currentId;
             _currentId++;
-            Type = type;
+            AnimalType = animalType;
             Sex = sex;
             X = position.Item1;
             Y = position.Item2;
             _age = 0;
 
             // set the rest using AnimalType
-            var spec = Metadata.AnimalSpecifications[type];
+            var spec = Metadata.AnimalSpecifications[animalType];
             if (spec.IsPredatory)
             {
                 _brain = new PredatoryBrain();
@@ -97,7 +97,7 @@ namespace CringeForestLibrary
 
         public void Eat(FoodSupplier food)
         {
-            var typeSpec = Metadata.AnimalSpecifications[Type];
+            var typeSpec = Metadata.AnimalSpecifications[AnimalType];
             if (!typeSpec.FoodTypes.Contains(food.FoodType)) return;
             var canEat = typeSpec.FoodIntake - Saturation;
             if (canEat > food.Saturation)
@@ -111,7 +111,7 @@ namespace CringeForestLibrary
 
         private void Eat(Animal animal)
         {
-            var typeSpec = Metadata.AnimalSpecifications[Type];
+            var typeSpec = Metadata.AnimalSpecifications[AnimalType];
             var canEat = typeSpec.FoodIntake - Saturation;
             if (canEat > animal._foodIntake)
             {
@@ -123,8 +123,8 @@ namespace CringeForestLibrary
 
         private static (int, int) Fight(Animal a1, Animal a2, in Map map)
         {
-            var type1 = Metadata.AnimalSpecifications[a1.Type];
-            var type2 = Metadata.AnimalSpecifications[a2.Type];
+            var type1 = Metadata.AnimalSpecifications[a1.AnimalType];
+            var type2 = Metadata.AnimalSpecifications[a2.AnimalType];
             Animal winner, loser;
 
             switch (type1.IsPredatory)
@@ -156,8 +156,8 @@ namespace CringeForestLibrary
 
             winner.Eat(loser);
             map.DeleteAnimalByPos(loser.Position());
-            Trace.WriteLine(Metadata.AnimalSpecifications[loser.Type].Name + " at " + loser.Position() 
-                            + " has been eaten by a " + Metadata.AnimalSpecifications[winner.Type].Name);
+            Trace.WriteLine(Metadata.AnimalSpecifications[loser.AnimalType].Name + " at " + loser.Position() 
+                            + " has been eaten by a " + Metadata.AnimalSpecifications[winner.AnimalType].Name);
             return winner.Position();
         }
 
@@ -279,26 +279,26 @@ namespace CringeForestLibrary
             if (Saturation < 0 || _age > _maxAge)
             {
                 map.DeleteAnimalByPos(Position());
-                Trace.WriteLine("Animal " + Id + " " + Metadata.AnimalSpecifications[Type].Name + " at " 
+                Trace.WriteLine("Animal " + Id + " " + Metadata.AnimalSpecifications[AnimalType].Name + " at " 
                                 + Position() + " died of natural cause.");
                 return;
             }
 
             // get new position
-            var coords = _brain.Think(Type, _foodIntake, Position(), map, DefaultFieldOfView);
+            var coords = _brain.Think(AnimalType, _foodIntake, Position(), map, DefaultFieldOfView);
 
             var animalIdByPos = map.AnimalIdByPos;
             var animals = map.AnimalsById;
             if (animalIdByPos.ContainsKey(coords)) // Is there an animal?
             {
                 var animal = animals[animalIdByPos[coords]];
-                if (animals[animalIdByPos[coords]].Type == Type)
+                if (animals[animalIdByPos[coords]].AnimalType == AnimalType)
                 {
-                    var saturationChange = (int) Math.Round(Metadata.AnimalSpecifications[Type].FoodIntake * 0.8);
+                    var saturationChange = (int) Math.Round(Metadata.AnimalSpecifications[AnimalType].FoodIntake * 0.8);
                     Saturation -= saturationChange;
                     animal.Saturation -= saturationChange;
                     var newCoords = FindEmptySpotNearCoords(coords);
-                    map.AddAnimal(newCoords, new Animal(Type,
+                    map.AddAnimal(newCoords, new Animal(AnimalType,
                         new Random().Next(2) == 0 ? AnimalSex.Male : AnimalSex.Female, newCoords));
                     coords = FindEmptySpotNearCoords(coords);
                 }

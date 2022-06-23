@@ -138,7 +138,7 @@ internal abstract partial class Brain
                     continue;
                 }
 
-                if (type == animal.Type)
+                if (type == animal.AnimalType)
                 {
                     possiblePartners.Add(animal);
                 }
@@ -186,7 +186,7 @@ internal abstract partial class Brain
                 if (!map.AnimalIdByPos.ContainsKey((i, j))) continue;
 
                 var animal = map.AnimalsById[map.AnimalIdByPos[(i, j)]];
-                var spec = Metadata.AnimalSpecifications[animal.Type];
+                var spec = Metadata.AnimalSpecifications[animal.AnimalType];
                 var distance = Math.Sqrt(Math.Pow(j - position.Item2, 2) + Math.Pow(i - position.Item1, 2));
                 if (!spec.IsPredatory || minDistance <= distance) continue;
                 minDistance = distance;
@@ -262,7 +262,7 @@ internal abstract partial class Brain
 
                 var current = map.AnimalsById[map.AnimalIdByPos[(j, i)]];
                 var spec = Metadata.AnimalSpecifications[type];
-                var hisSpec = Metadata.AnimalSpecifications[current.Type];
+                var hisSpec = Metadata.AnimalSpecifications[current.AnimalType];
                 if (maxSaturation >= hisSpec.FoodIntake || hisSpec.FoodIntake > spec.FoodIntake) continue;
                 maxSaturation = hisSpec.FoodIntake;
                 animal = current;

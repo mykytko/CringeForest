@@ -23,7 +23,7 @@ namespace CringeForestLibrary
             foreach (var animal in animals)
             {
                 animal.Value.Act(in _map);
-                var name = Metadata.AnimalSpecifications[animal.Value.Type].Name;
+                var name = Metadata.AnimalSpecifications[animal.Value.AnimalType].Name;
                 if (!dict.ContainsKey(name))
                 {
                     dict.Add(name, 1);

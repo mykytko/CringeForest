@@ -32,3 +32,8 @@ button {
   margin: 10% 2% 2%;
   height: 25%;
 }
+
+.input-file {
+    display: block;
+    margin: auto;
+}
