@@ -1,6 +1,6 @@
 # CringeForest
-This is a WIP simulation of wild life with behavior evolution.
-the finished project is intended to work according to The Lotka–Volterra equations,
+This is a simulation of wild life with behavior evolution.
+the finished project works according to The Lotka–Volterra equations,
 also known as the predator–prey equations.
 
 Used technologies are C#, ASP.NET Core and Angular. Angular is used for the web
