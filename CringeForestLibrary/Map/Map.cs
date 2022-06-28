@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,15 +10,28 @@ namespace CringeForestLibrary
         private readonly IMapViewer _mapViewer;
         public int Height { get; }
         public int Width { get; }
+        
         public class Pixel
         {
+            private int _biomeId;
+            public int BiomeId
+            {
+                get => _biomeId;
+                private init
+                {
+                    if (value == -1)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                
+                    _biomeId = value;
+                }
+            }
+            
             public Pixel(int biomeId)
             {
-                //TODO: check if biomeId == -1
                 BiomeId = biomeId;
             }
-
-            public int BiomeId { get; }
         }
 
         public Pixel[,] Matrix { get; }
@@ -26,24 +40,28 @@ namespace CringeForestLibrary
         public Dictionary<(int, int), int> AnimalIdByPos { get; }
         private readonly List<int> _animalsToDelete = new();
 
+        /*
+        * Makes copy of given map and stores it into inner fields
+        * (sizes, tables of pixels, foods(decoded), animals)
+        */
         public Map(SerializableMap map, IMapViewer mapViewer)
         {
             Height = map.Height;
             Width = map.Width;
-            Matrix = new Pixel[Width, Height];
+            Matrix = new Pixel[Height, Width];
             for (var i = 0; i < Height; i++)
             {
                 for (var j = 0; j < Width; j++)
                 {
-                    Matrix[j, i] = new Pixel(map.Matrix[i][j]);
+                    Matrix[i, j] = new Pixel(map.Matrix[i][j]);
                 }
             }
 
             Food = new Dictionary<(int, int), FoodSupplier>();
             foreach (var (key, value) in map.FoodSuppliers)
             {
-                var y = key / Width;
-                var x = key % Width;
+                var x = key / Height;
+                var y = key % Height;
                 Food.Add((x, y), value);
             }
 
@@ -58,6 +76,9 @@ namespace CringeForestLibrary
             _mapViewer = mapViewer;
         }
         
+        /*
+         * Puts received sizes, tables of pixels, foods, animals into inner fields
+         */
         public Map(IMapViewer mapViewer, int height, int width, Pixel[,] matrix, 
             Dictionary<(int, int), FoodSupplier> food, ConcurrentDictionary<int, Animal> animals)
         {
@@ -71,7 +92,6 @@ namespace CringeForestLibrary
             foreach (var animal in animals)
             {
                 AnimalIdByPos.Add(animal.Value.Position(), animal.Key);
-                Trace.WriteLine(animal.Value.Sex + " " + Metadata.AnimalSpecifications[animal.Value.AnimalType].Name);
             }
             _mapViewer = mapViewer;
             Trace.WriteLine("The map is initialized");
@@ -101,6 +121,14 @@ namespace CringeForestLibrary
             _animalsToDelete.Clear();
         }
 
+        /*
+         * Attempts to increase the saturation of all food by the constant amount of growth,
+         * but not more than the maximum for that type of food
+         * BTW: the growth rate of food should be adjusted manually
+         * so that the simulation runs as long and dynamically as possible
+         * growthRate should be moved to specification.json
+         * and have different value for different food types
+         */
         public void GrowFood()
         {
             const int growthRate = 2;

@@ -42,7 +42,6 @@ namespace CringeForestLibrary
     public class FoodSupplier
     {
         private int _saturation;
-
         public int Saturation
         {
             get => _saturation;
@@ -56,7 +55,6 @@ namespace CringeForestLibrary
                 _saturation = value;
             }
         }
-
         public int FoodType { get; set; }
 
         [JsonConstructor]
@@ -65,7 +63,7 @@ namespace CringeForestLibrary
             FoodType = foodType;
             Saturation = saturation;
         }
-
+        
         public FoodSupplier(int foodType)
         {
             FoodType = foodType;

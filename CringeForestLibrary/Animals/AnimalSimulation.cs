@@ -16,6 +16,12 @@ namespace CringeForestLibrary
             _statisticsViewer = statisticsViewer;
         }
 
+        /*
+         * Makes every animal(by id) acts
+         * Counts the population (at the moment before the action of the animals)
+         * and passes this data for statistical processing
+         * Updates map`s animal and food dict fields
+         */
         public void SimulateTick()
         {
             var animals = _map.AnimalsById;

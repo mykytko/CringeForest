@@ -19,6 +19,11 @@ namespace CringeForestLibrary
         private static IStatisticsViewer _statisticsViewer;
         private static Map _map;
 
+        /*
+         * Creates log file
+         * Initializes metadata using default json
+         * Puts received viewers into inner fields 
+         */
         public CringeForest(IMapViewer mapViewer, IStatisticsViewer statisticsViewer)
         {
             Trace.Listeners.Add(new TextWriterTraceListener(File.CreateText("CringeForest.log")));
@@ -42,7 +47,12 @@ namespace CringeForestLibrary
         {
             _map = new Map(JsonSerializer.Deserialize<SerializableMap>(map), _mapViewer);
         }
-
+        
+        /*
+         * Creates components of simulation and puts them into inner fields
+         * Starts the map display
+         * Runs main loop of simulation 
+         */
         public void InitializeSimulation()
         {
             try
@@ -95,14 +105,15 @@ namespace CringeForestLibrary
 
                     if (_exitProgram)
                     {
+                        Trace.WriteLine("Simulation ended.");
                         break;
                     }
                 }
 
                 Trace.WriteLine("Tick " + _age + " start");
                 _animalSimulation.SimulateTick();
-                _age++;
                 Trace.WriteLine("Tick " + _age + " end");
+                _age++;
             }
         }
     }

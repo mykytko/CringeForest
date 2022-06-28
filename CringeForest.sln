@@ -2,10 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CringeForestLibrary", "CringeForestLibrary\CringeForestLibrary.csproj", "{781084F2-FAC4-44FA-8B46-0FE16E7599AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleInterface", "ConsoleInterface\ConsoleInterface.csproj", "{3F99AEF9-0447-4EBF-A677-BCD517605AAF}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngularWebInterface", "AngularWebInterface\AngularWebInterface.csproj", "{26C03C5B-68D8-4596-90D9-8B947373341C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWebInterface", "BlazorWebInterface\BlazorWebInterface.csproj", "{2C806306-0E35-4A1F-B381-2F47C6FF99A1}"
 EndProject
 Global
@@ -18,14 +14,6 @@ Global
 		{781084F2-FAC4-44FA-8B46-0FE16E7599AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{781084F2-FAC4-44FA-8B46-0FE16E7599AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{781084F2-FAC4-44FA-8B46-0FE16E7599AD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3F99AEF9-0447-4EBF-A677-BCD517605AAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3F99AEF9-0447-4EBF-A677-BCD517605AAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3F99AEF9-0447-4EBF-A677-BCD517605AAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3F99AEF9-0447-4EBF-A677-BCD517605AAF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{26C03C5B-68D8-4596-90D9-8B947373341C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{26C03C5B-68D8-4596-90D9-8B947373341C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{26C03C5B-68D8-4596-90D9-8B947373341C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{26C03C5B-68D8-4596-90D9-8B947373341C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2C806306-0E35-4A1F-B381-2F47C6FF99A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2C806306-0E35-4A1F-B381-2F47C6FF99A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C806306-0E35-4A1F-B381-2F47C6FF99A1}.Release|Any CPU.ActiveCfg = Release|Any CPU

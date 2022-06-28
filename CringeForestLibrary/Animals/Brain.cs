@@ -5,6 +5,10 @@ namespace CringeForestLibrary;
 
 internal abstract partial class Brain
 {
+    //BTW: these thresholds should be adjusted manually
+    //so that the simulation runs as long and dynamically as possible
+    //Thresholds should be moved to specification.json
+    //and have different value for different animals
     private const double HungerThreshold = 0.4;
     private const double FullThreshold = 0.6;
 

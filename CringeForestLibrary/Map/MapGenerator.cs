@@ -7,18 +7,23 @@ namespace CringeForestLibrary
 {
     public static class MapGenerator
     {
+        /*
+         * Generates tables of landscape, food, animals according to given sizes
+         * Returns map object with generated tables and received mapViewer
+         * BTW: the average amount of food and animals should be adjusted manually
+         * so that the simulation runs as long and dynamically as possible
+         */
         public static Map GenerateMap(IMapViewer mapViewer, int height = 256, int width = 256)
         {
+            const double averageAmountOfFood = 1000.0;
+            const double averageAmountOfAnimals = 1000.0;
+            
             Trace.WriteLine("Generating the map...");
             var terrain = GenerateTerrain(height, width);
-            //---///
             var foodGenerator = new GenerateFood();
-            var food = foodGenerator.TemplateGenerate(terrain, height, width);
+            var food = foodGenerator.Generate(terrain, height, width, averageAmountOfFood);
             var animalGenerator = new GenerateAnimal();
-            var animals = animalGenerator.TemplateGenerate(terrain, height, width);
-            //---//
-            //var food = GenerateFoodSuppliers(terrain, height, width);
-            //var animals = GenerateAnimals(terrain, height, width);
+            var animals = animalGenerator.Generate(terrain, height, width, averageAmountOfAnimals);
             var map = new Map(mapViewer, height, width, terrain, food, animals);
             Trace.WriteLine("The map has been generated.");
             return map;
@@ -38,6 +43,7 @@ namespace CringeForestLibrary
             }
             return terrain;
         }
+        
         private static Map.Pixel SelectBiome(double value)
         {
             var biomeId = -1;
@@ -54,31 +60,31 @@ namespace CringeForestLibrary
             var pixel = new Map.Pixel(biomeId);
             return pixel;
         }
-        //---//
-        private abstract class Generate<T>
+        
+        //template method
+        private abstract class TemplateGenerate<T>
         {
-            public T TemplateGenerate(in Map.Pixel[,] terrain, int height, int width)
+            public T Generate(in Map.Pixel[,] terrain, int height, int width, double averageAmount)
             {
                 var result = InitT();
                 var rand = new Random();
-                const double averageAmount = 1000.0;
                 var baselineProbability = averageAmount / (height * width);
                 for (var i = 0; i < height; i++)
                 {
                     for (var j = 0; j < width; j++)
                     {
-                        var roll1 = rand.NextDouble();
-                        if (roll1 > baselineProbability)
+                        var roll = rand.NextDouble();
+                        if (roll > baselineProbability)
                         {
                             continue;
                         }
-                        var biomeId = terrain[j, i].BiomeId;
+                        var biomeId = terrain[i, j].BiomeId;
                         var resultType = DetermineResultType(rand, biomeId);
                         if (resultType == -1)
                         {
                             continue;
                         }
-                        GenerateInstance(in result, j, i, resultType, rand);
+                        GenerateInstance(in result, i, j, resultType, rand);
                     }
                 }
                 return result;
@@ -87,7 +93,8 @@ namespace CringeForestLibrary
             protected abstract int DetermineResultType(Random rand, int biomeId);
             protected abstract void GenerateInstance(in T collection, int i, int j, int resultType, Random rand);
         }
-        private class GenerateFood : Generate<Dictionary<(int, int), FoodSupplier>>
+        
+        private class GenerateFood : TemplateGenerate<Dictionary<(int, int), FoodSupplier>>
         {
             protected override Dictionary<(int, int), FoodSupplier> InitT()
             {
@@ -114,10 +121,9 @@ namespace CringeForestLibrary
                 collection.Add((i, j), foodSupplier);
             }
         }
-        private class GenerateAnimal : Generate<ConcurrentDictionary<int, Animal>>
+        
+        private class GenerateAnimal : TemplateGenerate<ConcurrentDictionary<int, Animal>>
         {
-            private Generate<ConcurrentDictionary<int, Animal>> _generateImplementation;
-
             protected override ConcurrentDictionary<int, Animal> InitT()
             {
                 return new ConcurrentDictionary<int, Animal>();
@@ -145,112 +151,13 @@ namespace CringeForestLibrary
                 collection.TryAdd(animal.Id, animal);
             }
         }
-        //---//
+        
         /*
-        private static Dictionary<(int, int), FoodSupplier> GenerateFoodSuppliers(in Map.Pixel[,] terrain, 
-            int height, int width)
-        {
-            var food = new Dictionary<(int, int), FoodSupplier>();
-            var rand = new Random();
-            const double averageFoodAmount = 100.0;
-            var baselineProbability = averageFoodAmount / (height * width);
-            for (var i = 0; i < height; i++)
-            {
-                for (var j = 0; j < width; j++)
-                {
-                    var roll1 = rand.NextDouble();
-                    if (roll1 > baselineProbability)
-                    {
-                        continue;
-                    }
-                    var biomeId = terrain[i, j].BiomeId;
-                    var foodType = DetermineFoodType(rand, biomeId);
-                    if (foodType == -1)
-                    {
-                        continue;
-                    }
-                    var foodSupplier = new FoodSupplier(foodType);
-                    food.Add((i, j), foodSupplier);
-                    Trace.WriteLine(Metadata.FoodSpecifications[foodType].Name 
-                                    + " at position (" + i + ", " + j + ") was created");
-                }
-            }
-            return food;
-        }
-        
-        private static int DetermineFoodType(Random rand, int biomeId)
-        {
-            var roll = rand.Next(100);
-            var sum = 0;
-            var result = -1;
-            foreach (var (foodId, foodShare) in Metadata.BiomeSpecifications[biomeId].FoodShares)
-            {
-                sum += foodShare;
-                if (roll > sum) continue;
-                result = foodId;
-                break;
-            }
-
-            return result;
-        }
-
-        private static Dictionary<(int, int), Animal> GenerateAnimals(in Map.Pixel[,] terrain, int height, int width)
-        {
-            var animals = new Dictionary<(int, int), Animal>();
-            var rand = new Random();
-            const double averageAnimalAmount = 100.0;
-            var baselineProbability = averageAnimalAmount / (height * width);
-            for (var i = 0; i < height; i++)
-            {
-                for (var j = 0; j < width; j++)
-                {
-                    var roll1 = rand.NextDouble();
-                    if (roll1 > baselineProbability)
-                    {
-                        continue;
-                    }
-                    var biomeId = terrain[i, j].BiomeId;
-                    var animalType = DetermineAnimalType(rand, biomeId);
-                    if (animalType == -1)
-                    {
-                        continue;
-                    }
-                    var animal = new Animal(animalType,
-                        rand.Next(2) != 0 ? AnimalSex.Female : AnimalSex.Male, (i, j));
-                    animals.Add((i, j), animal);
-                }
-            }
-            return animals;
-        }
-        
-        private static int DetermineAnimalType(Random rand, int biomeId)
-        {
-            var roll = rand.Next(100);
-            var sum = 0;
-            var result = -1;
-            foreach (var (animalId, animalShare) in Metadata.BiomeSpecifications[biomeId].AnimalShares)
-            {
-                sum += animalShare;
-                if (roll > sum) continue;
-                result = animalId;
-                break;
-            }
-
-            return result;
-        }*/
-        
+         * Class for generating vector field with a smooth gradient change
+         * BTW: Many fields here should be adjusted by making them smth like seed-influenced
+         */
         private class PerlinNoise
         {
-            //TODO1: work with seed: make seed-influenced: parameters below, biome boundaries,
-            //average*Amount in MapGenerator.Generate*(also influenced by map size), seed for var rand in
-            //MapGenerator.Generate*
-            //TODO2: work with biome boundaries in json and MapGenerator.SelectBiome: improve,
-            //make seed-influenced, generate different regions, were boundaries will be quite different
-            //TODO3: extend json variety, change spawn-rate type from int to double
-            //TODO: comments(also with basic values for fields), renames(2 moments), formatting,
-            //access modifiers(readonly included), excaptions catch, static classes and constructors and generics,
-            //pair coordinates into one type (int, int)
-            
             private readonly int _size;
             private readonly int[] _permutation;
             private readonly int[] _p;

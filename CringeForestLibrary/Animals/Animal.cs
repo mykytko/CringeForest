@@ -28,6 +28,10 @@ namespace CringeForestLibrary
 
     public class Animal
     {
+        //BTW: these parameter should be adjusted manually
+        //so that the simulation runs as long and dynamically as possible
+        //DefaultFieldOfView should be moved to specification.json
+        //and have different value for different animals
         private const int DefaultFieldOfView = 8;
 
         private static int _currentId = 0;
@@ -163,7 +167,7 @@ namespace CringeForestLibrary
 
         private static bool InBounds(in Map map, (int, int) coords)
         {
-            return coords.Item1 >= 0 && coords.Item1 < map.Width && coords.Item2 >= 0 && coords.Item2 < map.Height;
+            return coords.Item1 >= 0 && coords.Item1 < map.Height && coords.Item2 >= 0 && coords.Item2 < map.Width;
         }
 
         private static bool IsGood(in Map map, (int, int) spot)
@@ -173,101 +177,87 @@ namespace CringeForestLibrary
                    && InBounds(in _map, spot)
                    && _map.Matrix[spot.Item1, spot.Item2].BiomeId != 0;
         }
+        /*
+         * var spot = coords;
+            var newSpot = spot;
+            
+            var dirAmount = 4;
+            var dir = new Random().Next(dirAmount);
+            var dirChangeAmount = 0;
+            var step = 1 + dirChangeAmount / dirAmount;
+            var isGood = false;
 
+            do
+            {
+                switch (dir % dirAmount)
+                {
+                    case 0: //up
+                        newSpot.Item1 -= step;
+                        break;
+                    case 1: //right
+                        newSpot.Item2 += step;
+                        break;
+                    case 2: //down
+                        newSpot.Item1 += step;
+                        break;
+                    case 3: //left
+                        newSpot.Item2 -= step;
+                        break;
+                }
+                if (IsGood(in _map, newSpot))
+                {
+                    isGood = true;
+                    spot = newSpot;
+                }
+
+                newSpot = spot;
+                dir++;
+                dirChangeAmount++;
+                step = 1 + dirChangeAmount / dirAmount;
+            } while (!isGood);
+            
+            return spot;
+         */
         internal static (int, int) FindEmptySpotNearCoords((int, int) coords)
         {
             var spot = coords;
-            var animalIdByPos = _map.AnimalIdByPos;
-
-            var coord = new Random().Next(2);
-            var sign = new Random().Next(2);
-            if (sign == 0)
-            {
-                sign = -1;
-            }
-            
             var newSpot = spot;
-            if (coord == 0)
-            {
-                newSpot.Item1 += sign;
-            }
-            else
-            {
-                newSpot.Item2 += sign;
-            }
-
-            if (InBounds(in _map, newSpot) && !animalIdByPos.ContainsKey(newSpot) 
-                                  && _map.Matrix[newSpot.Item1, newSpot.Item2].BiomeId != 0)
-            {
-                return newSpot;
-            }
-
-            var dir = 0;
-            var step = 0;
+            
+            var dirAmount = 4;
+            var dir = new Random().Next(dirAmount);
+            var dirChangeAmount = 0;
+            var step = 1 + dirChangeAmount / dirAmount;
             var isGood = false;
-            while (!IsGood(in _map, spot))
+
+            do
             {
-                switch (dir % 4)
+                switch (dir % dirAmount)
                 {
-                    case 0:
-                        step++;
-                        var limit = spot.Item1 + step;
-                        while (spot.Item1 < limit)
-                        {
-                            if (IsGood(in _map, spot))
-                            {
-                                isGood = true;
-                                break;
-                            }
-                            spot.Item1++;
-                        }
+                    case 0: //up
+                        newSpot.Item1 -= step;
                         break;
-                    case 1:
-                        limit = spot.Item2 + step;
-                        while (spot.Item2 < limit)
-                        {
-                            if (IsGood(in _map, spot))
-                            {
-                                isGood = true;
-                                break;
-                            }
-                            spot.Item2++;
-                        }
+                    case 1: //right
+                        newSpot.Item2 += step;
                         break;
-                    case 2:
-                        step++;
-                        limit = spot.Item1 - step;
-                        while (spot.Item1 > limit)
-                        {
-                            if (IsGood(in _map, spot))
-                            {
-                                isGood = true;
-                                break;
-                            }
-                            spot.Item1--;
-                        }
+                    case 2: //down
+                        newSpot.Item1 += step;
                         break;
-                    case 3:
-                        limit = spot.Item2 - step;
-                        while (spot.Item2 > limit)
-                        {
-                            if (IsGood(in _map, spot))
-                            {
-                                isGood = true;
-                                break;
-                            }
-                            spot.Item2--;
-                        }
+                    case 3: //left
+                        newSpot.Item2 -= step;
                         break;
+                }
+                if (IsGood(in _map, newSpot))
+                {
+                    isGood = true;
+                    spot = newSpot;
                 }
 
-                if (isGood)
-                {
-                    break;
-                }
+                newSpot = spot;
                 dir++;
-            }
-
+                dirChangeAmount++;
+                step = 1 + dirChangeAmount / dirAmount;
+            } while (!isGood);
+            
             return spot;
         }
 
